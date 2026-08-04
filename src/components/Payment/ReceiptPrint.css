@@ -1,0 +1,306 @@
+/* Receipt Print Styles */
+.print-container {
+  display: block;
+}
+
+.receipt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.receipt-preview {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.receipt-content {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #000;
+}
+
+.receipt-header {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.receipt-header h2 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.company-name {
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+.address {
+  font-size: 11px;
+  margin: 3px 0;
+}
+
+.receipt-type {
+  text-align: center;
+  margin: 15px 0;
+}
+
+.receipt-type h3 {
+  margin: 0 0 5px 0;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.receipt-number {
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.receipt-divider {
+  border-top: 1px dashed #333;
+  margin: 10px 0;
+}
+
+.receipt-divider-bold {
+  border-top: 2px solid #333;
+  margin: 8px 0;
+}
+
+.receipt-section {
+  margin-bottom: 10px;
+}
+
+.receipt-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+.receipt-row.indent {
+  padding-left: 15px;
+  font-size: 11px;
+}
+
+.receipt-row.receipt-total {
+  font-size: 14px;
+  padding: 5px 0;
+}
+
+.receipt-order {
+  margin-bottom: 12px;
+}
+
+.receipt-order-header {
+  font-weight: bold;
+  margin-bottom: 5px;
+  font-size: 12px;
+}
+
+.receipt-item {
+  margin-bottom: 5px;
+}
+
+.item-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.item-notes {
+  font-size: 10px;
+  font-style: italic;
+  color: #555;
+  margin-left: 10px;
+  margin-top: 2px;
+}
+
+.payment-method-detail {
+  margin-bottom: 8px;
+}
+
+.receipt-footer {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 11px;
+}
+
+.receipt-footer p {
+  margin: 5px 0;
+}
+
+.receipt-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.btn-print,
+.btn-close-preview {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-print {
+  background: #2196f3;
+  color: white;
+}
+
+.btn-print:hover {
+  background: #1976d2;
+}
+
+.btn-close-preview {
+  background: #333;
+  color: white;
+}
+
+.btn-close-preview:hover {
+  background: #555;
+}
+
+/* Pre-Receipt Styles */
+.pre-receipt .watermark {
+  font-size: 20px;
+  font-weight: bold;
+  color: #000;
+  margin-bottom: 5px;
+}
+
+.pre-receipt .watermark-subtitle {
+  font-size: 11px;
+  color: #000;
+  margin-bottom: 10px;
+}
+
+/* Receipt Groups */
+.receipt-group {
+  margin-bottom: 10px;
+}
+
+.receipt-group-label {
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 4px;
+  margin-top: 6px;
+  color: #000;
+  text-transform: uppercase;
+  border-bottom: 1px solid #333;
+  padding-bottom: 2px;
+}
+
+/* Forzar blanco y negro en pre-cuenta */
+.pre-receipt * {
+  color: #000 !important;
+}
+
+/* Print Styles - 80mm Thermal Printer */
+@media print {
+  /* Ocultar todo excepto el contenido de impresión */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Solo mostrar el contenedor de impresión */
+  .print-container,
+  .print-container * {
+    visibility: visible;
+  }
+
+  /* Ocultar otros modales que puedan estar montados */
+  .modal-overlay,
+  .payment-modal {
+    display: none !important;
+  }
+
+  .print-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  .receipt-overlay {
+    position: static;
+    background: white;
+    display: block;
+  }
+
+  .receipt-preview {
+    max-width: none;
+    max-height: none;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .receipt-actions,
+  .btn-print,
+  .btn-close-preview {
+    display: none !important;
+  }
+
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  .receipt-content {
+    width: 80mm;
+    padding: 5mm;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+  }
+
+  /* Evitar saltos de página dentro de secciones */
+  .receipt-section,
+  .receipt-order,
+  .receipt-item,
+  .receipt-group {
+    page-break-inside: avoid;
+  }
+
+  .receipt-header h2 {
+    font-size: 15px;
+  }
+
+  .receipt-type h3 {
+    font-size: 13px;
+  }
+
+  .receipt-row.receipt-total {
+    font-size: 13px;
+  }
+
+  .pre-receipt .watermark {
+    font-size: 18px;
+  }
+}

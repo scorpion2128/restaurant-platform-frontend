@@ -1,0 +1,235 @@
+.user-dashboard {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.quick-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.quick-stat-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.quick-stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.quick-stat-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.quick-stat-content {
+  flex: 1;
+}
+
+.quick-stat-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.quick-stat-value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.user-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Lista de tareas */
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.task-item {
+  padding: 1rem;
+  background-color: var(--bg-secondary);
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.task-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.task-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.task-priority {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.priority-high {
+  background-color: #ef4444;
+}
+
+.priority-medium {
+  background-color: #f59e0b;
+}
+
+.priority-low {
+  background-color: #10b981;
+}
+
+.task-info {
+  flex: 1;
+}
+
+.task-table {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.task-description {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.task-time {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.btn-task-complete {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  background-color: var(--primary);
+  color: var(--text-white);
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.btn-task-complete:hover {
+  background-color: var(--primary-dark);
+}
+
+.btn-task-complete svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Lista de mesas */
+.tables-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.table-card {
+  padding: 1rem;
+  background-color: var(--bg-secondary);
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.table-number {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.table-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.table-status-ordering {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.table-status-eating {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.table-status-paying {
+  background-color: #fed7aa;
+  color: #ea580c;
+}
+
+.table-details {
+  display: flex;
+  gap: 1rem;
+}
+
+.table-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.table-detail-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-table-action {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+  .quick-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .user-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}

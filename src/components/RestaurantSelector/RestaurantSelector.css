@@ -1,0 +1,181 @@
+.restaurant-selector {
+  position: relative;
+  margin-right: 1rem;
+}
+
+.restaurant-selector-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.restaurant-selector-toggle:hover {
+  border-color: var(--primary);
+  background: var(--bg-hover);
+}
+
+.restaurant-selector-toggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.restaurant-selector-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.restaurant-selector-icon svg {
+  width: 18px;
+  height: 18px;
+  color: white;
+}
+
+.restaurant-selector-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 150px;
+}
+
+.restaurant-selector-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.restaurant-selector-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.restaurant-selector-arrow {
+  width: 18px;
+  height: 18px;
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+}
+
+.restaurant-selector-arrow.open {
+  transform: rotate(180deg);
+}
+
+.restaurant-selector-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 280px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.restaurant-selector-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.restaurant-selector-item:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.restaurant-selector-item.active {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.restaurant-selector-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.restaurant-item-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.restaurant-item-icon svg {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+.restaurant-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.restaurant-item-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.restaurant-item-role {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.restaurant-item-check {
+  width: 20px;
+  height: 20px;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .restaurant-selector-info {
+    min-width: 120px;
+  }
+
+  .restaurant-selector-dropdown {
+    right: auto;
+    left: 0;
+  }
+}
