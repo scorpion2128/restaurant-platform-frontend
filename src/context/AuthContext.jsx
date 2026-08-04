@@ -1,6 +1,8 @@
 import { createContext, useState, useContext, useEffect } from 'react'
 import { jwtDecode } from 'jwt-decode'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
+
 const AuthContext = createContext(null)
 
 export const useAuth = () => {
@@ -48,7 +50,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      const response = await fetch('http://localhost:8080/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +107,7 @@ export const AuthProvider = ({ children }) => {
 
   const selectRestaurant = async (restaurantId, tempToken) => {
     try {
-      const response = await fetch('http://localhost:8080/api/auth/select-restaurant', {
+      const response = await fetch(`${API_BASE_URL}/auth/select-restaurant`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -150,7 +152,7 @@ export const AuthProvider = ({ children }) => {
   const switchRestaurant = async (restaurantId) => {
     try {
       const token = localStorage.getItem('accessToken')
-      const response = await fetch('http://localhost:8080/api/auth/switch-restaurant', {
+      const response = await fetch(`${API_BASE_URL}/auth/switch-restaurant`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
