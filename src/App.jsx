@@ -45,7 +45,7 @@ function App() {
             } 
           />
           <Route 
-            path="/product-categories" 
+            path="/master-product-categories" 
             element={
               <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
                 <ProductCategories />
@@ -61,7 +61,7 @@ function App() {
             } 
           />
           <Route 
-            path="/menu-templates" 
+            path="/master-menu-templates" 
             element={
               <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
                 <MenuTemplates />
