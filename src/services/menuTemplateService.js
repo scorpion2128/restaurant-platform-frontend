@@ -1,10 +1,11 @@
 import api from './api'
+import { MENU_TEMPLATES } from '../constants/apiEndpoints'
 
 const menuTemplateService = {
   // Get all templates
   getTemplates: async (params = {}) => {
     try {
-      const response = await api.get('/master-menu-templates', { params })
+      const response = await api.get(MENU_TEMPLATES.BASE, { params })
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error loading templates:', error)
@@ -15,7 +16,7 @@ const menuTemplateService = {
   // Get template by ID
   getTemplateById: async (id) => {
     try {
-      const response = await api.get(`/master-menu-templates/${id}`)
+      const response = await api.get(MENU_TEMPLATES.BY_ID(id))
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error loading template:', error)
@@ -26,7 +27,7 @@ const menuTemplateService = {
   // Create template
   createTemplate: async (data) => {
     try {
-      const response = await api.post('/master-menu-templates', data)
+      const response = await api.post(MENU_TEMPLATES.BASE, data)
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error creating template:', error)
@@ -37,7 +38,7 @@ const menuTemplateService = {
   // Update template
   updateTemplate: async (id, data) => {
     try {
-      const response = await api.put(`/master-menu-templates/${id}`, data)
+      const response = await api.put(MENU_TEMPLATES.BY_ID(id), data)
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error updating template:', error)
@@ -48,7 +49,7 @@ const menuTemplateService = {
   // Delete template
   deleteTemplate: async (id) => {
     try {
-      await api.delete(`/master-menu-templates/${id}`)
+      await api.delete(MENU_TEMPLATES.BY_ID(id))
     } catch (error) {
       console.error('Error deleting template:', error)
       throw new Error(error.response?.data?.message || error.message || 'Error al eliminar plantilla')
@@ -58,7 +59,7 @@ const menuTemplateService = {
   // Add items to template
   addItems: async (id, items) => {
     try {
-      const response = await api.post(`/master-menu-templates/${id}/items`, { items })
+      const response = await api.post(MENU_TEMPLATES.ITEMS(id), { items })
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error adding items:', error)
@@ -69,7 +70,7 @@ const menuTemplateService = {
   // Remove item from template
   removeItem: async (templateId, itemId) => {
     try {
-      const response = await api.delete(`/master-menu-templates/${templateId}/items/${itemId}`)
+      const response = await api.delete(MENU_TEMPLATES.REMOVE_ITEM(templateId, itemId))
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error removing item:', error)

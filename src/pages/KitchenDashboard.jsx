@@ -213,7 +213,7 @@ const KitchenDashboard = () => {
             />
             <span>Actualización automática</span>
           </label>
-          <button className="btn-refresh" onClick={loadOrders}>
+          <button className="btn-secondary" onClick={loadOrders}>
             🔄 Actualizar
           </button>
         </div>

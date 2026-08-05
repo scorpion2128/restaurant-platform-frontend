@@ -1,4 +1,5 @@
 import api from './api'
+import { USERS } from '../constants/apiEndpoints'
 
 /**
  * Service for user-related API calls
@@ -24,7 +25,7 @@ const userService = {
       params.append('role', role)
     }
 
-    const response = await api.get(`/users?${params.toString()}`)
+    const response = await api.get(`${USERS.BASE}?${params.toString()}`)
     return response // Returns the complete ApiResponse
   },
 
@@ -38,7 +39,7 @@ const userService = {
    * @returns {Promise<Object>} Created user
    */
   createUser: async (userData) => {
-    const response = await api.post('/users', userData)
+    const response = await api.post(USERS.BASE, userData)
     return response
   },
 
@@ -53,7 +54,7 @@ const userService = {
    * @returns {Promise<Object>} Updated user
    */
   updateUser: async (id, userData) => {
-    const response = await api.put(`/users/${id}`, userData)
+    const response = await api.put(USERS.BY_ID(id), userData)
     return response
   },
 
@@ -64,7 +65,7 @@ const userService = {
    * @returns {Promise<Object>} Updated user
    */
   toggleUserStatus: async (id) => {
-    const response = await api.patch(`/users/${id}/toggle-status`)
+    const response = await api.patch(USERS.TOGGLE_STATUS(id))
     return response
   },
 
@@ -73,7 +74,7 @@ const userService = {
    * @returns {Promise<Object>} User profile
    */
   getCurrentUser: async () => {
-    const response = await api.get('/users/me')
+    const response = await api.get(USERS.ME)
     return response
   },
 }

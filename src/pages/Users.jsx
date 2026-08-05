@@ -233,7 +233,7 @@ const Users = () => {
             <p className="page-subtitle">Administra los usuarios del sistema</p>
           </div>
           <div className="users-header-actions">
-            <button className="btn-refresh" onClick={loadUsers} disabled={loading} title="Refrescar lista">
+            <button className="btn-secondary" onClick={loadUsers} disabled={loading} title="Refrescar lista">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={loading ? 'spinning' : ''}>
                 <polyline points="23 4 23 10 17 10" />
                 <polyline points="1 20 1 14 7 14" />
@@ -241,7 +241,7 @@ const Users = () => {
               </svg>
               Refrescar
             </button>
-            <button className="btn-new-user" onClick={handleCreateUser}>
+            <button className="btn-action" onClick={handleCreateUser}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="8.5" cy="7" r="4" />

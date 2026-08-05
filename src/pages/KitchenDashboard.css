@@ -42,21 +42,6 @@
   cursor: pointer;
 }
 
-.btn-refresh {
-  padding: 10px 20px;
-  background: #2196f3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.3s;
-}
-
-.btn-refresh:hover {
-  background: #1976d2;
-}
-
 /* Columnas de Kanban */
 .kitchen-columns {
   display: grid;
@@ -291,25 +276,6 @@
   display: flex;
   gap: 8px;
   margin-top: 8px;
-}
-
-.btn-action {
-  flex: 1;
-  padding: 9px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 12px;
-  transition: all 0.2s;
-  color: white;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.btn-action:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .btn-start {

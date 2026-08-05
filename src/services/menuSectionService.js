@@ -1,10 +1,11 @@
 import api from './api'
+import { MENU_TEMPLATES } from '../constants/apiEndpoints'
 
 const menuSectionService = {
   // Get all sections for a template
   getSections: async (templateId) => {
     try {
-      const response = await api.get(`/master-menu-templates/${templateId}/sections`)
+      const response = await api.get(MENU_TEMPLATES.SECTIONS(templateId))
       return response
     } catch (error) {
       return { success: false, message: error.message || 'Error al cargar secciones' }
@@ -14,7 +15,7 @@ const menuSectionService = {
   // Get section by ID
   getSectionById: async (templateId, id) => {
     try {
-      const response = await api.get(`/master-menu-templates/${templateId}/sections/${id}`)
+      const response = await api.get(MENU_TEMPLATES.SECTION_BY_ID(templateId, id))
       return response
     } catch (error) {
       return { success: false, message: error.message || 'Error al cargar sección' }
@@ -24,7 +25,7 @@ const menuSectionService = {
   // Create section
   createSection: async (templateId, data) => {
     try {
-      const response = await api.post(`/master-menu-templates/${templateId}/sections`, data)
+      const response = await api.post(MENU_TEMPLATES.SECTIONS(templateId), data)
       return response
     } catch (error) {
       return { success: false, message: error.message || 'Error al crear sección' }
@@ -34,7 +35,7 @@ const menuSectionService = {
   // Update section
   updateSection: async (templateId, id, data) => {
     try {
-      const response = await api.put(`/master-menu-templates/${templateId}/sections/${id}`, data)
+      const response = await api.put(MENU_TEMPLATES.SECTION_BY_ID(templateId, id), data)
       return response
     } catch (error) {
       return { success: false, message: error.message || 'Error al actualizar sección' }
@@ -44,7 +45,7 @@ const menuSectionService = {
   // Delete section
   deleteSection: async (templateId, id) => {
     try {
-      await api.delete(`/master-menu-templates/${templateId}/sections/${id}`)
+      await api.delete(MENU_TEMPLATES.SECTION_BY_ID(templateId, id))
     } catch (error) {
       throw new Error(error.message || 'Error al eliminar sección')
     }

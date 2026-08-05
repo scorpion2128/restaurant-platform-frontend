@@ -1,10 +1,11 @@
 import api from './api'
+import { PRODUCT_CATEGORIES } from '../constants/apiEndpoints'
 
 const productCategoryService = {
   // Get all categories
   getCategories: async (params = {}) => {
     try {
-      const response = await api.get('/master-product-categories', { params })
+      const response = await api.get(PRODUCT_CATEGORIES.BASE, { params })
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error loading categories:', error)
@@ -15,7 +16,7 @@ const productCategoryService = {
   // Get category by ID
   getCategoryById: async (id) => {
     try {
-      const response = await api.get(`/master-product-categories/${id}`)
+      const response = await api.get(PRODUCT_CATEGORIES.BY_ID(id))
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error loading category:', error)
@@ -26,7 +27,7 @@ const productCategoryService = {
   // Create category
   createCategory: async (data) => {
     try {
-      const response = await api.post('/master-product-categories', data)
+      const response = await api.post(PRODUCT_CATEGORIES.BASE, data)
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error creating category:', error)
@@ -37,7 +38,7 @@ const productCategoryService = {
   // Update category
   updateCategory: async (id, data) => {
     try {
-      const response = await api.put(`/master-product-categories/${id}`, data)
+      const response = await api.put(PRODUCT_CATEGORIES.BY_ID(id), data)
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error updating category:', error)
@@ -48,7 +49,7 @@ const productCategoryService = {
   // Delete category
   deleteCategory: async (id) => {
     try {
-      await api.delete(`/master-product-categories/${id}`)
+      await api.delete(PRODUCT_CATEGORIES.BY_ID(id))
     } catch (error) {
       throw new Error(error.message || 'Error al eliminar categoría')
     }

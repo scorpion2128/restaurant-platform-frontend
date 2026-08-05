@@ -1,10 +1,11 @@
 import api from './api'
+import { DAILY_MENUS } from '../constants/apiEndpoints'
 
 const dailyMenuService = {
   // Get all daily menus
   getDailyMenus: async (params = {}) => {
     try {
-      const response = await api.get('/daily-menus', { params })
+      const response = await api.get(DAILY_MENUS.BASE, { params })
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error loading daily menus:', error)
@@ -15,7 +16,7 @@ const dailyMenuService = {
   // Get daily menu by ID
   getDailyMenuById: async (id) => {
     try {
-      const response = await api.get(`/daily-menus/${id}`)
+      const response = await api.get(DAILY_MENUS.BY_ID(id))
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error loading daily menu:', error)
@@ -26,7 +27,7 @@ const dailyMenuService = {
   // Get daily menu by date
   getDailyMenuByDate: async (date) => {
     try {
-      const response = await api.get('/daily-menus/by-date', { params: { date } })
+      const response = await api.get(DAILY_MENUS.BY_DATE, { params: { date } })
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error loading daily menu by date:', error)
@@ -37,7 +38,7 @@ const dailyMenuService = {
   // Get active menu
   getActiveMenu: async () => {
     try {
-      const response = await api.get('/daily-menus/active')
+      const response = await api.get(DAILY_MENUS.ACTIVE)
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error loading active menu:', error)
@@ -48,7 +49,7 @@ const dailyMenuService = {
   // Create daily menu
   createDailyMenu: async (data) => {
     try {
-      const response = await api.post('/daily-menus', data)
+      const response = await api.post(DAILY_MENUS.BASE, data)
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error creating daily menu:', error)
@@ -59,7 +60,7 @@ const dailyMenuService = {
   // Update daily menu
   updateDailyMenu: async (id, data) => {
     try {
-      const response = await api.put(`/daily-menus/${id}`, data)
+      const response = await api.put(DAILY_MENUS.BY_ID(id), data)
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error updating daily menu:', error)
@@ -70,7 +71,7 @@ const dailyMenuService = {
   // Delete daily menu
   deleteDailyMenu: async (id) => {
     try {
-      await api.delete(`/daily-menus/${id}`)
+      await api.delete(DAILY_MENUS.BY_ID(id))
     } catch (error) {
       console.error('Error deleting daily menu:', error)
       throw new Error(error.response?.data?.message || error.message || 'Error al eliminar menú diario')
@@ -80,7 +81,7 @@ const dailyMenuService = {
   // Toggle active status
   toggleActive: async (id) => {
     try {
-      const response = await api.patch(`/daily-menus/${id}/toggle-active`)
+      const response = await api.patch(DAILY_MENUS.TOGGLE_ACTIVE(id))
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error toggling active status:', error)

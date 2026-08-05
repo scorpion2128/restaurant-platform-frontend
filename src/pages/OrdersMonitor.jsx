@@ -139,7 +139,7 @@ const OrdersMonitor = () => {
       <div className="orders-monitor">
         <div className="monitor-header">
         <h2>📊 Monitor de Pedidos</h2>
-        <button className="btn-refresh" onClick={loadOrders} disabled={loading}>
+        <button className="btn-secondary" onClick={loadOrders} disabled={loading}>
           {loading ? '⏳ Cargando...' : '🔄 Actualizar'}
         </button>
       </div>

@@ -233,7 +233,7 @@ const Products = () => {
             <p className="page-subtitle">Administra los platos y productos de tu restaurante</p>
           </div>
           <div className="users-header-actions">
-            <button className="btn-refresh" onClick={loadProducts} disabled={loading}>
+            <button className="btn-secondary" onClick={loadProducts} disabled={loading}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={loading ? 'spinning' : ''}>
                 <polyline points="23 4 23 10 17 10" />
                 <polyline points="1 20 1 14 7 14" />
@@ -241,7 +241,7 @@ const Products = () => {
               </svg>
               Refrescar
             </button>
-            <button className="btn-new-user" onClick={handleCreate}>
+            <button className="btn-action" onClick={handleCreate}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />

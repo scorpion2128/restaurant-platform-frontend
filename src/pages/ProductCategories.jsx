@@ -154,11 +154,11 @@ const ProductCategories = () => {
         
         <div className="users-header">
           <div>
-            <h1 className="page-title">Categorías de Productos</h1>
-            <p className="page-subtitle">Gestiona las categorías de tu menú</p>
+            <h1 className="page-title">Gestión de Categorías</h1>
+            <p className="page-subtitle">Gestiona las categorías para tus productos</p>
           </div>
           <div className="users-header-actions">
-            <button className="btn-refresh" onClick={loadCategories} disabled={loading}>
+            <button className="btn-secondary" onClick={loadCategories} disabled={loading}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={loading ? 'spinning' : ''}>
                 <polyline points="23 4 23 10 17 10" />
                 <polyline points="1 20 1 14 7 14" />
@@ -166,12 +166,12 @@ const ProductCategories = () => {
               </svg>
               Refrescar
             </button>
-            <button className="btn-new-user" onClick={handleCreate}>
+            <button className="btn-action" onClick={handleCreate}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Nueva Categoría
+              Nueva categoría
             </button>
           </div>
         </div>
@@ -252,7 +252,6 @@ const ProductCategories = () => {
             <table className="users-table">
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Nombre</th>
                   <th>Acciones</th>
                 </tr>
@@ -260,7 +259,6 @@ const ProductCategories = () => {
               <tbody>
                 {filteredCategories.map(category => (
                   <tr key={category.id}>
-                    <td>{category.id}</td>
                     <td>{category.name}</td>
                     <td className="actions-cell">
                       <button
@@ -304,17 +302,7 @@ const ProductCategories = () => {
           <div className="modal-overlay" onClick={() => !submitting && setShowModal(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>{modalMode === 'create' ? 'Crear Nueva Categoría' : 'Editar Categoría'}</h2>
-                <button 
-                  className="modal-close" 
-                  onClick={() => setShowModal(false)}
-                  disabled={submitting}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
+                <h2>{modalMode === 'create' ? 'Crear categoría' : 'Editar categoría'}</h2>
               </div>
 
               <form className="modal-form" onSubmit={handleSubmit}>
@@ -357,7 +345,7 @@ const ProductCategories = () => {
                     className="btn btn-primary"
                     disabled={submitting}
                   >
-                    {submitting ? 'Guardando...' : modalMode === 'create' ? 'Crear Categoría' : 'Guardar Cambios'}
+                    {submitting ? 'Guardando...' : modalMode === 'create' ? 'Crear categoría' : 'Guardar cambios'}
                   </button>
                 </div>
               </form>

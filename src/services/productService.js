@@ -1,10 +1,11 @@
 import api from './api'
+import { PRODUCTS } from '../constants/apiEndpoints'
 
 const productService = {
   // Get all products
   getProducts: async (params = {}) => {
     try {
-      const response = await api.get('/products', { params })
+      const response = await api.get(PRODUCTS.BASE, { params })
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error loading products:', error)
@@ -15,7 +16,7 @@ const productService = {
   // Get product by ID
   getProductById: async (id) => {
     try {
-      const response = await api.get(`/products/${id}`)
+      const response = await api.get(PRODUCTS.BY_ID(id))
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error loading product:', error)
@@ -26,7 +27,7 @@ const productService = {
   // Create product
   createProduct: async (data) => {
     try {
-      const response = await api.post('/products', data)
+      const response = await api.post(PRODUCTS.BASE, data)
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error creating product:', error)
@@ -37,7 +38,7 @@ const productService = {
   // Update product
   updateProduct: async (id, data) => {
     try {
-      const response = await api.put(`/products/${id}`, data)
+      const response = await api.put(PRODUCTS.BY_ID(id), data)
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error updating product:', error)
@@ -48,7 +49,7 @@ const productService = {
   // Delete product
   deleteProduct: async (id) => {
     try {
-      await api.delete(`/products/${id}`)
+      await api.delete(PRODUCTS.BY_ID(id))
     } catch (error) {
       console.error('Error deleting product:', error)
       throw new Error(error.response?.data?.message || error.message || 'Error al eliminar producto')
@@ -58,7 +59,7 @@ const productService = {
   // Toggle product availability
   toggleAvailability: async (id) => {
     try {
-      const response = await api.patch(`/products/${id}/toggle-availability`)
+      const response = await api.patch(PRODUCTS.TOGGLE_AVAILABILITY(id))
       return response.data?.data || response.data
     } catch (error) {
       console.error('Error toggling availability:', error)
