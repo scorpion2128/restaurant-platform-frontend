@@ -308,3 +308,90 @@
   height: 100%;
 }
 
+/* Tablets en modo horizontal - Android y otros */
+@media (min-width: 641px) and (max-width: 1024px) and (orientation: landscape) {
+  .login-card {
+    max-width: 380px;
+    padding: 2rem;
+  }
+
+  .login-logo {
+    margin-bottom: 1.5rem;
+  }
+
+  .logo-icon {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 0.75rem;
+  }
+
+  .logo-icon svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .login-logo h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .login-logo p {
+    font-size: 0.8125rem;
+  }
+
+  .login-form {
+    gap: 1rem;
+  }
+
+  .form-group .label {
+    font-size: 0.8125rem;
+    margin-bottom: 0.375rem;
+  }
+
+  .input-with-icon .input {
+    padding: 0.625rem 1rem 0.625rem 2.75rem;
+    font-size: 0.875rem;
+  }
+
+  .input-with-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .login-button {
+    padding: 0.75rem;
+    font-size: 0.9375rem;
+  }
+
+  .login-footer {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+  }
+
+  .restaurant-selection {
+    max-height: 300px;
+    gap: 0.75rem;
+  }
+
+  .restaurant-card {
+    padding: 0.875rem;
+  }
+
+  .restaurant-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .restaurant-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .restaurant-info h3 {
+    font-size: 0.9375rem;
+  }
+
+  .restaurant-role {
+    font-size: 0.8125rem;
+  }
+}
