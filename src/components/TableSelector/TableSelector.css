@@ -1,5 +1,8 @@
+/* ============================================
+   CONTENEDOR PRINCIPAL
+   ============================================ */
 .table-selector {
-  padding: 2rem 2rem;
+  padding: 2rem;
   width: 100%;
   box-sizing: border-box;
 }
@@ -21,121 +24,205 @@
   text-align: left;
 }
 
+/* ============================================
+   GRID DE MESAS
+   ============================================ */
 .tables-grid {
   display: grid;
-  grid-template-columns: repeat(5, 200px);
-  gap: 1.5rem;
-  justify-content: center;
+  grid-template-columns: repeat(auto-fill, 160px);
+  gap: 2rem;
+  justify-content: flex-start;
   width: 100%;
-  margin: 0 auto;
+  margin: 0;
   padding: 0;
 }
 
+/* ============================================
+   TARJETA DE MESA
+   ============================================ */
 .table-card {
-  background: var(--bg-card);
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  text-align: center;
-  box-shadow: var(--shadow-md);
-  transition: all 0.3s ease;
-  border: 2px solid var(--border);
-  position: relative;
-  overflow: hidden;
-  min-height: 160px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  width: 200px;
+  gap: 0.75rem;
+  padding: 0;
+  width: 160px;
+  transition: all 0.3s ease;
 }
 
 .table-card.clickable {
   cursor: pointer;
 }
 
-.table-card.clickable:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
+.table-card.clickable:hover .table-circle {
+  transform: scale(1.05);
 }
 
-.table-available {
-  border-color: #10b981;
-  background: linear-gradient(135deg, #ffffff 0%, #d1fae5 100%);
-}
-
-.table-available:hover {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  border-color: #059669;
-}
-
-.table-occupied {
-  border-color: #ef4444;
-  background: linear-gradient(135deg, #ffffff 0%, #fee2e2 100%);
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.table-reserved {
-  border-color: var(--primary);
-  background: linear-gradient(135deg, #ffffff 0%, #fed7aa 100%);
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.table-out-of-service {
-  border-color: var(--border);
-  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+.table-card.not-clickable {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-.table-icon {
-  font-size: 2.25rem;
-  margin-bottom: 0.625rem;
+/* ============================================
+   CÍRCULO DE LA MESA
+   ============================================ */
+.table-circle {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+/* Estados del círculo de mesa */
+.table-circle.table-available {
+  background:  #10b981;
+}
+
+.table-circle.table-occupied {
+  background: #ef4444;
+}
+
+.table-circle.table-reserved {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.table-circle.table-out-of-service {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
 }
 
 .table-number {
-  font-size: 1.25rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: white;
+  z-index: 1;
+}
+
+/* ============================================
+   INDICADOR DE ORDEN (Badge circular)
+   ============================================ */
+.order-indicator {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+/* Estados del indicador de orden */
+.order-indicator-pending {
+  background: #9ca3af; /* Gris - Pendiente */
+}
+
+.order-indicator-preparation {
+  background: #06b6d4; /* Turquesa - En preparación */
+}
+
+.order-indicator-ready {
+  background: #3b82f6; /* Azul - Listo para entregar */
+}
+
+.order-indicator-delivered {
+  background: #f59e0b; /* Naranja - Entregado */
+}
+
+/* ============================================
+   BADGE DE ESTADO DE MESA
+   ============================================ */
+.table-status-badge {
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0.5rem 1.25rem;
+  border-radius: 50px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: white;
+}
+
+/* Estados del badge de mesa */
+.table-status-badge.table-available {
+  background: #10b981;
+}
+
+.table-status-badge.table-occupied {
+  background: #ef4444;
+}
+
+.table-status-badge.table-reserved {
+  background: #f59e0b;
+}
+
+.table-status-badge.table-out-of-service {
+  background: #9ca3af;
+}
+
+/* ============================================
+   INFORMACIÓN DE ÓRDENES
+   ============================================ */
+.orders-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  text-align: center;
+}
+
+.orders-summary {
+  font-size: 0.875rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 0.5rem;
 }
 
-.table-capacity {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.5rem;
-}
-
-.table-status {
+.orders-status {
   font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ready-count {
+  color: #10b981;
   font-weight: 600;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  display: inline-block;
-  margin-top: 0.5rem;
 }
 
-.table-available .table-status {
-  background: #10b981;
-  color: white;
+/* Tiempo transcurrido con alertas de color */
+.time-elapsed {
+  font-weight: 600;
 }
 
-.table-occupied .table-status {
-  background: #ef4444;
-  color: white;
+.time-elapsed.time-normal {
+  color: #10b981; /* Verde - menos de 10 min */
 }
 
-.table-reserved .table-status {
-  background: var(--primary);
-  color: white;
+.time-elapsed.time-warning {
+  color: #f59e0b; /* Naranja - 10-20 min */
 }
 
-.table-out-of-service .table-status {
-  background: var(--text-secondary);
-  color: white;
+.time-elapsed.time-critical {
+  color: #ef4444; /* Rojo - más de 20 min */
 }
 
+.status-delivered {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* ============================================
+   ESTADOS DE CARGA Y VACÍO
+   ============================================ */
 .table-selector-loading {
   display: flex;
   flex-direction: column;
@@ -187,51 +274,295 @@
   font-weight: 400;
 }
 
-/* Responsive Design */
+/* ============================================
+   PANEL DE ÓRDENES ACTIVAS
+   ============================================ */
+.orders-section-large {
+  margin-top: 3rem;
+  background: var(--bg-card);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+}
+
+/* Header del panel de órdenes */
+.orders-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.header-title h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+
+.header-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Filtros de órdenes */
+.filter-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--border);
+  background: white;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+}
+
+.filter-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.filter-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.sound-toggle-btn {
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--border);
+  background: white;
+  border-radius: 0.5rem;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sound-toggle-btn:hover {
+  border-color: var(--primary);
+}
+
+/* Grid de tarjetas de órdenes */
+.orders-grid-large {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+/* Tarjeta de orden individual */
+.order-card-large {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.order-card-large:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.order-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.mesa-number {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Estados de orden en tarjetas */
+.status-tag {
+  text-align: right;
+}
+
+.status-main {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.status-time {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.order-card-large.status-pending .status-main {
+  color: #9ca3af;
+}
+
+.order-card-large.status-in_preparation .status-main {
+  color: #06b6d4;
+}
+
+.order-card-large.status-ready .status-main {
+  color: #10b981;
+}
+
+.order-card-large.status-delivered .status-main {
+  color: #6b7280;
+}
+
+/* Cuerpo de la tarjeta de orden */
+.order-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.order-items-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.item-preview {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.item-quantity {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.items-more {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.order-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Botón marcar como entregado */
+.btn-mark-delivered {
+  padding: 0.75rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.btn-mark-delivered:hover {
+  background: #059669;
+}
+
+/* Estado sin órdenes */
+.no-orders-large {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+}
+
+.no-orders-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+/* Tablets grandes y pantallas medianas */
 @media (max-width: 1300px) {
   .tables-grid {
-    grid-template-columns: repeat(4, 200px);
-    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fill, 160px);
+    gap: 1.5rem;
   }
 }
 
+/* Tablets */
 @media (max-width: 1000px) {
   .table-selector {
     padding: 1.5rem;
   }
 
   .tables-grid {
-    grid-template-columns: repeat(3, 190px);
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, 140px);
+    gap: 1.25rem;
   }
 
   .table-card {
-    width: 190px;
-    padding: 1.25rem;
-    min-height: 140px;
+    width: 140px;
   }
 
-  .table-selector-header {
-    margin-bottom: 2rem;
+  .table-circle {
+    width: 100px;
+    height: 100px;
+  }
+
+  .table-number {
+    font-size: 2rem;
   }
 
   .table-selector-header h2 {
     font-size: 1.5rem;
   }
+
+  .orders-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .orders-grid-large {
+    grid-template-columns: 1fr;
+  }
 }
 
+/* Móviles */
 @media (max-width: 700px) {
   .table-selector {
     padding: 1rem;
   }
 
   .tables-grid {
-    grid-template-columns: repeat(2, 180px);
-    gap: 0.875rem;
+    grid-template-columns: repeat(auto-fill, 120px);
+    gap: 1rem;
   }
 
   .table-card {
-    width: 180px;
+    width: 120px;
+  }
+
+  .table-circle {
+    width: 90px;
+    height: 90px;
+  }
+
+  .table-number {
+    font-size: 1.75rem;
   }
 
   .table-selector-header {
@@ -241,17 +572,32 @@
   .table-selector-header h2 {
     font-size: 1.25rem;
   }
-  
-  .table-card {
-    padding: 1rem;
-    min-height: 120px;
-  }
 
-  .table-number {
-    font-size: 1rem;
-  }
-
-  .table-capacity {
+  .table-status-badge {
     font-size: 0.75rem;
+    padding: 0.375rem 1rem;
+  }
+
+  .orders-summary {
+    font-size: 0.75rem;
+  }
+
+  .orders-status {
+    font-size: 0.625rem;
+  }
+
+  .order-indicator {
+    width: 24px;
+    height: 24px;
+    border-width: 2px;
+  }
+
+  .filter-btn {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+  }
+
+  .sound-toggle-btn {
+    font-size: 1rem;
   }
 }

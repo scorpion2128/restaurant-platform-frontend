@@ -6,7 +6,7 @@ const productCategoryService = {
   getCategories: async (params = {}) => {
     try {
       const response = await api.get(PRODUCT_CATEGORIES.BASE, { params })
-      return response.data?.data || response.data
+      return response
     } catch (error) {
       console.error('Error loading categories:', error)
       throw new Error(error.message || 'Error al cargar categorías')
@@ -17,7 +17,7 @@ const productCategoryService = {
   getCategoryById: async (id) => {
     try {
       const response = await api.get(PRODUCT_CATEGORIES.BY_ID(id))
-      return response.data?.data || response.data
+      return response
     } catch (error) {
       console.error('Error loading category:', error)
       throw new Error(error.message || 'Error al cargar categoría')
@@ -28,7 +28,7 @@ const productCategoryService = {
   createCategory: async (data) => {
     try {
       const response = await api.post(PRODUCT_CATEGORIES.BASE, data)
-      return response.data?.data || response.data
+      return response
     } catch (error) {
       console.error('Error creating category:', error)
       throw new Error(error.message || 'Error al crear categoría')
@@ -39,7 +39,7 @@ const productCategoryService = {
   updateCategory: async (id, data) => {
     try {
       const response = await api.put(PRODUCT_CATEGORIES.BY_ID(id), data)
-      return response.data?.data || response.data
+      return response
     } catch (error) {
       console.error('Error updating category:', error)
       throw new Error(error.message || 'Error al actualizar categoría')
@@ -49,7 +49,8 @@ const productCategoryService = {
   // Delete category
   deleteCategory: async (id) => {
     try {
-      await api.delete(PRODUCT_CATEGORIES.BY_ID(id))
+      const response = await api.delete(PRODUCT_CATEGORIES.BY_ID(id))
+      return response
     } catch (error) {
       throw new Error(error.message || 'Error al eliminar categoría')
     }

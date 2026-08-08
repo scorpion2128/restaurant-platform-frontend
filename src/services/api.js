@@ -15,12 +15,27 @@ const getAuthToken = () => {
 /**
  * Makes an HTTP request to the API
  * @param {string} endpoint - The API endpoint (without base URL)
- * @param {Object} options - Fetch options (method, body, headers, etc.)
+ * @param {Object} options - Fetch options (method, body, headers, params, etc.)
  * @returns {Promise<Object>} The response data
  * @throws {Error} If the request fails
  */
 export const apiRequest = async (endpoint, options = {}) => {
   const token = getAuthToken()
+  
+  // Build URL with query parameters if provided
+  let url = `${API_BASE_URL}${endpoint}`
+  if (options.params) {
+    const queryParams = new URLSearchParams()
+    Object.entries(options.params).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        queryParams.append(key, value)
+      }
+    })
+    const queryString = queryParams.toString()
+    if (queryString) {
+      url += `?${queryString}`
+    }
+  }
   
   const config = {
     ...options,
@@ -37,7 +52,7 @@ export const apiRequest = async (endpoint, options = {}) => {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, config)
+    const response = await fetch(url, config)
     
     // Handle 401 Unauthorized - token expired or invalid
     if (response.status === 401) {

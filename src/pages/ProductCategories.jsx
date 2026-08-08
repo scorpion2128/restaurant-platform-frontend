@@ -43,9 +43,9 @@ const ProductCategories = () => {
         size: itemsPerPage,
         sort: 'name,asc'
       })
-      if (response.content) {
-        setCategories(response.content)
-        setTotalElements(response.totalElements || 0)
+      if (response.success && response.data) {
+        setCategories(response.data.content || [])
+        setTotalElements(response.data.totalElements || 0)
       }
     } catch (error) {
       toast.error(error.message || 'Error al cargar categorías')

@@ -77,7 +77,7 @@ const OrderTaking = () => {
   const handleAddToCart = (item, sectionName) => {
     // Buscar si ya existe el item en el carrito
     const existingIndex = cart.findIndex(
-      cartItem => cartItem.productId === item.product.id && !cartItem.isPartOfMenu
+      cartItem => cartItem.productId === item.masterProductId && !cartItem.isPartOfMenu
     );
 
     if (existingIndex >= 0) {
@@ -88,10 +88,10 @@ const OrderTaking = () => {
     } else {
       // Agregar nuevo item
       const newItem = {
-        productId: item.product.id,
-        productName: item.product.name,
+        productId: item.masterProductId,
+        productName: item.productName,
         quantity: 1,
-        unitPrice: item.overridePrice || item.priceOverride || item.product.basePrice,
+        unitPrice: item.productPrice,
         notes: '',
         isPartOfMenu: false,
         menuGroupId: null,
@@ -99,7 +99,7 @@ const OrderTaking = () => {
       };
       setCart([...cart, newItem]);
     }
-    showToast(`${item.product.name} agregado al carrito`, 'success');
+    showToast(`${item.productName} agregado al carrito`, 'success');
   };
 
   const handleCreateMenuCombo = () => {
@@ -196,7 +196,6 @@ const OrderTaking = () => {
 
   const handleTableSelected = (table) => {
     setSelectedTable(table);
-    showToast(`Mesa ${table.number} seleccionada`, 'success');
   };
 
   const handleBackToTableSelection = () => {
@@ -267,7 +266,7 @@ const OrderTaking = () => {
   const getTemplateItemsBySection = (template) => {
     const sections = {};
     template.items.forEach(item => {
-      const sectionName = item.section?.name || 'Carta General';
+      const sectionName = item.sectionName || 'Carta General';
       if (!sections[sectionName]) {
         sections[sectionName] = [];
       }
@@ -354,10 +353,10 @@ const OrderTaking = () => {
                     {items.map((item) => (
                       <div key={item.id} className="menu-item-card">
                         <div className="item-info">
-                          <span className="item-name">{item.product.name}</span>
+                          <span className="item-name">{item.productName}</span>
                           {!['ENTRADA', 'SOPA'].includes(sectionName) && (
                             <span className="item-price">
-                              S/ {(item.overridePrice || item.product.basePrice).toFixed(2)}
+                              S/ {(item.productPrice).toFixed(2)}
                             </span>
                           )}
                         </div>
@@ -382,9 +381,9 @@ const OrderTaking = () => {
                     {items.map((item) => (
                       <div key={item.id} className="menu-item-card">
                         <div className="item-info">
-                          <span className="item-name">{item.product.name}</span>
+                          <span className="item-name">{item.productName}</span>
                           <span className="item-price">
-                            S/ {(item.priceOverride || item.product.basePrice).toFixed(2)}
+                            S/ {item.productPrice.toFixed(2)}
                           </span>
                         </div>
                         <button

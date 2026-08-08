@@ -38,9 +38,10 @@ const Products = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    code: '',
+    categoryId: '',
     price: '',
-    available: true,
-    categoryIds: []
+    active: true
   })
 
   const loadCategories = async () => {
@@ -105,9 +106,10 @@ const Products = () => {
     setFormData({
       name: '',
       description: '',
+      code: '',
+      categoryId: '',
       price: '',
-      available: true,
-      categoryIds: []
+      active: true
     })
     setShowModal(true)
   }
@@ -119,9 +121,10 @@ const Products = () => {
     setFormData({
       name: product.name,
       description: product.description || '',
+      code: product.code || '',
+      categoryId: product.categoryId,
       price: product.price.toString(),
-      available: product.available,
-      categoryIds: product.categoryIds || []
+      active: product.active
     })
     setShowModal(true)
   }
@@ -143,22 +146,11 @@ const Products = () => {
   const handleToggleAvailability = async (id) => {
     try {
       await productService.toggleAvailability(id)
-      toast.success('Disponibilidad actualizada correctamente')
+      toast.success('Estado actualizado correctamente')
       loadProducts()
     } catch (error) {
-      toast.error(error.message || 'Error al cambiar disponibilidad')
+      toast.error(error.message || 'Error al cambiar estado')
     }
-  }
-
-  const handleCategoryToggle = (categoryId) => {
-    setFormData(prev => {
-      const currentIds = prev.categoryIds || []
-      if (currentIds.includes(categoryId)) {
-        return { ...prev, categoryIds: currentIds.filter(id => id !== categoryId) }
-      } else {
-        return { ...prev, categoryIds: [...currentIds, categoryId] }
-      }
-    })
   }
 
   const handleSubmit = async (e) => {
@@ -166,14 +158,17 @@ const Products = () => {
     setFieldErrors({})
 
     const errors = {}
+    
     if (!formData.name.trim()) {
       errors.name = 'El nombre es requerido'
     }
+    
+    if (!formData.categoryId) {
+      errors.categoryId = 'La categoría es requerida'
+    }
+    
     if (!formData.price || parseFloat(formData.price) < 0) {
       errors.price = 'El precio debe ser mayor o igual a 0'
-    }
-    if (!formData.categoryIds || formData.categoryIds.length === 0) {
-      errors.categoryIds = 'Selecciona al menos una categoría'
     }
     
     if (Object.keys(errors).length > 0) {
@@ -187,9 +182,10 @@ const Products = () => {
       const payload = {
         name: formData.name,
         description: formData.description,
+        code: formData.code || null,
+        categoryId: parseInt(formData.categoryId),
         price: parseFloat(formData.price),
-        available: formData.available,
-        categoryIds: formData.categoryIds
+        active: formData.active
       }
 
       if (modalMode === 'create') {
@@ -230,7 +226,7 @@ const Products = () => {
         <div className="users-header">
           <div>
             <h1 className="page-title">Gestión de Productos</h1>
-            <p className="page-subtitle">Administra los platos y productos de tu restaurante</p>
+            <p className="page-subtitle">Administra los productos y platillos de tu restaurante</p>
           </div>
           <div className="users-header-actions">
             <button className="btn-secondary" onClick={loadProducts} disabled={loading}>
@@ -283,7 +279,7 @@ const Products = () => {
           </div>
 
           <div className="filter-group">
-            <label htmlFor="available">Disponibilidad:</label>
+            <label htmlFor="available">Estado:</label>
             <select
               id="available"
               className="filter-select"
@@ -291,8 +287,8 @@ const Products = () => {
               onChange={(e) => setFilterAvailable(e.target.value)}
             >
               <option value="all">Todos</option>
-              <option value="available">Disponibles</option>
-              <option value="unavailable">No Disponibles</option>
+              <option value="available">Activos</option>
+              <option value="unavailable">Inactivos</option>
             </select>
           </div>
         </div>
@@ -360,9 +356,9 @@ const Products = () => {
               <thead>
                 <tr>
                   <th>Nombre</th>
-                  <th>Categorías</th>
+                  <th>Categoría</th>
                   <th>Precio</th>
-                  <th>Disponibilidad</th>
+                  <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -380,16 +376,14 @@ const Products = () => {
                       </div>
                     </td>
                     <td>
-                      {product.categoryNames && product.categoryNames.map((name, idx) => (
-                        <span key={idx} className="role-badge" style={{ marginRight: '4px', marginBottom: '4px' }}>
-                          {name}
-                        </span>
-                      ))}
+                      <div>
+                        {product.categoryName}
+                      </div>
                     </td>
                     <td>S/ {product.price.toFixed(2)}</td>
                     <td>
-                      <span className={`status-badge status-${product.available ? 'active' : 'inactive'}`}>
-                        {product.available ? 'Disponible' : 'No Disponible'}
+                      <span className={`status-badge status-${product.active ? 'active' : 'inactive'}`}>
+                        {product.active ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
                     <td className="actions-cell">
@@ -404,11 +398,11 @@ const Products = () => {
                         </svg>
                       </button>
                       <button
-                        className={`btn-icon ${product.available ? 'btn-deactivate' : 'btn-activate'}`}
+                        className={`btn-icon ${product.active ? 'btn-deactivate' : 'btn-activate'}`}
                         onClick={() => handleToggleAvailability(product.id)}
-                        title={product.available ? 'Marcar No Disponible' : 'Marcar Disponible'}
+                        title={product.active ? 'Desactivar' : 'Activar'}
                       >
-                        {product.available ? (
+                        {product.active ? (
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <circle cx="12" cy="12" r="10" />
                             <line x1="15" y1="9" x2="9" y2="15" />
@@ -499,12 +493,45 @@ const Products = () => {
 
                 <div className="form-row">
                   <div className="form-group">
+                    <label htmlFor="categoryId">Categoría <span className="required">*</span></label>
+                    <select
+                      id="categoryId"
+                      className={`input select-input ${fieldErrors.categoryId ? 'input-error' : ''}`}
+                      value={formData.categoryId}
+                      onChange={(e) => {
+                        setFormData({ ...formData, categoryId: e.target.value })
+                        if (fieldErrors.categoryId) setFieldErrors(prev => ({ ...prev, categoryId: '' }))
+                      }}
+                      disabled={submitting}
+                    >
+                      <option value="">Selecciona una categoría...</option>
+                      {categories.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                    {fieldErrors.categoryId && <div className="field-error-text">{fieldErrors.categoryId}</div>}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="code">Código</label>
+                    <input
+                      id="code"
+                      type="text"
+                      className="input"
+                      value={formData.code}
+                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                      disabled={submitting}
+                      placeholder="Ej: P001"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
                     <label htmlFor="price">Precio (S/) <span className="required">*</span></label>
                     <input
                       id="price"
-                      type="number"
-                      step="0.01"
-                      min="0"
+                      type="text"
                       className={`input ${fieldErrors.price ? 'input-error' : ''}`}
                       value={formData.price}
                       onChange={(e) => {
@@ -518,49 +545,18 @@ const Products = () => {
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="available">Estado</label>
+                    <label htmlFor="active">Estado</label>
                     <select
-                      id="available"
+                      id="active"
                       className="input select-input"
-                      value={formData.available}
-                      onChange={(e) => setFormData({ ...formData, available: e.target.value === 'true' })}
+                      value={formData.active}
+                      onChange={(e) => setFormData({ ...formData, active: e.target.value === 'true' })}
                       disabled={submitting}
                     >
-                      <option value="true">Disponible</option>
-                      <option value="false">No Disponible</option>
+                      <option value="true">Activo</option>
+                      <option value="false">Inactivo</option>
                     </select>
                   </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Categorías <span className="required">*</span></label>
-                  <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {categories.map(category => (
-                      <label 
-                        key={category.id}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          padding: '8px 12px',
-                          border: '1px solid #ddd',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          backgroundColor: formData.categoryIds.includes(category.id) ? '#e3f2fd' : 'white',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.categoryIds.includes(category.id)}
-                          onChange={() => handleCategoryToggle(category.id)}
-                          disabled={submitting}
-                          style={{ marginRight: '8px' }}
-                        />
-                        {category.name}
-                      </label>
-                    ))}
-                  </div>
-                  {fieldErrors.categoryIds && <div className="field-error-text">{fieldErrors.categoryIds}</div>}
                 </div>
 
                 <div className="required-legend">

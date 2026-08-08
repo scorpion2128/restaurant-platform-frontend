@@ -8,7 +8,8 @@ const menuSectionService = {
       const response = await api.get(MENU_TEMPLATES.SECTIONS(templateId))
       return response
     } catch (error) {
-      return { success: false, message: error.message || 'Error al cargar secciones' }
+      console.error('Error loading sections:', error)
+      return { success: false, data: [], message: error.message || 'Error al cargar secciones' }
     }
   },
 

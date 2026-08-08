@@ -3,16 +3,6 @@
  * All API endpoint URLs are defined here for easy maintenance and updates
  */
 
-// Daily Menus
-const DAILY_MENUS_PATH = '/daily-menus'
-export const DAILY_MENUS = {
-  BASE: DAILY_MENUS_PATH,
-  BY_ID: (id) => `${DAILY_MENUS_PATH}/${id}`,
-  BY_DATE: `${DAILY_MENUS_PATH}/by-date`,
-  ACTIVE: `${DAILY_MENUS_PATH}/active`,
-  TOGGLE_ACTIVE: (id) => `${DAILY_MENUS_PATH}/${id}/toggle-active`,
-}
-
 // Menu Templates
 const MENU_TEMPLATES_PATH = '/master-menu-templates'
 export const MENU_TEMPLATES = {
@@ -49,6 +39,13 @@ const PRODUCT_CATEGORIES_PATH = '/master-product-categories'
 export const PRODUCT_CATEGORIES = {
   BASE: PRODUCT_CATEGORIES_PATH,
   BY_ID: (id) => `${PRODUCT_CATEGORIES_PATH}/${id}`,
+}
+
+// Master Products (Catalog)
+const MASTER_PRODUCTS_PATH = '/master-products'
+export const MASTER_PRODUCTS = {
+  BASE: MASTER_PRODUCTS_PATH,
+  BY_ID: (id) => `${MASTER_PRODUCTS_PATH}/${id}`,
 }
 
 // Products

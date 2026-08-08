@@ -5,14 +5,63 @@ import { USER_ROLES, hasRole } from '../constants'
 import Layout from '../components/Layout/Layout'
 import { useToast, ToastContainer } from '../components/Toast/Toast'
 import dailyMenuService from '../services/dailyMenuService'
+import recurringMenuService from '../services/recurringMenuService'
 import menuTemplateService from '../services/menuTemplateService'
-import productService from '../services/productService'
 import '../pages/Users.css'
+
+const DAYS_OF_WEEK = [
+  { value: 1, name: 'Lunes' },
+  { value: 2, name: 'Martes' },
+  { value: 3, name: 'Miércoles' },
+  { value: 4, name: 'Jueves' },
+  { value: 5, name: 'Viernes' },
+  { value: 6, name: 'Sábado' },
+  { value: 7, name: 'Domingo' }
+]
+
+const parseLocalDate = (dateString) => {
+  const [year, month, day] = dateString.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+const formatDate = (dateString) => {
+  const [year, month, day] = dateString.split('-')
+  return `${day}/${month}/${year}`
+}
 
 const DailyMenus = () => {
   const { user: currentUser } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState('recurring') // 'recurring' or 'overrides'
+
+  // Recurring menus state
+  const [recurringMenus, setRecurringMenus] = useState([])
+  const [recurringLoading, setRecurringLoading] = useState(true)
+
+  // Overrides state
+  const [overrides, setOverrides] = useState([])
+  const [overridesLoading, setOverridesLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(0)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [totalElements, setTotalElements] = useState(0)
+
+  // Templates
+  const [templates, setTemplates] = useState([])
+
+  // Modal state
+  const [showModal, setShowModal] = useState(false)
+  const [modalMode, setModalMode] = useState('recurring') // 'recurring' or 'override'
+  const [selectedDayOfWeek, setSelectedDayOfWeek] = useState(null)
+  const [selectedOverride, setSelectedOverride] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  const [formData, setFormData] = useState({
+    templateId: '',
+    menuDate: ''
+  })
 
   useEffect(() => {
     if (currentUser && !hasRole(currentUser, USER_ROLES.ADMIN)) {
@@ -21,45 +70,16 @@ const DailyMenus = () => {
     }
   }, [currentUser, navigate])
 
-  const [dailyMenus, setDailyMenus] = useState([])
-  const [templates, setTemplates] = useState([])
-  const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [totalElements, setTotalElements] = useState(0)
-  const [showModal, setShowModal] = useState(false)
-  const [modalMode, setModalMode] = useState('create')
-  const [selectedMenu, setSelectedMenu] = useState(null)
-  const [currentPage, setCurrentPage] = useState(0)
-  const [itemsPerPage, setItemsPerPage] = useState(10)
-  const [submitting, setSubmitting] = useState(false)
-  const [fieldErrors, setFieldErrors] = useState({})
-
-  const [formData, setFormData] = useState({
-    menuDate: '',
-    templateId: '',
-    active: false,
-    selectedProducts: [],
-    priceOverrides: {},
-    sectionIds: {}
-  })
-
-  const loadDailyMenus = async () => {
-    try {
-      setLoading(true)
-      const response = await dailyMenuService.getDailyMenus({
-        page: currentPage,
-        size: itemsPerPage
-      })
-      if (response.success && response.data) {
-        setDailyMenus(response.data.content)
-        setTotalElements(response.data.totalElements)
+  useEffect(() => {
+    if (hasRole(currentUser, USER_ROLES.ADMIN)) {
+      loadTemplates()
+      if (activeTab === 'recurring') {
+        loadRecurringMenus()
+      } else {
+        loadOverrides()
       }
-    } catch (error) {
-      toast.error(error.message || 'Error al cargar menús diarios')
-    } finally {
-      setLoading(false)
     }
-  }
+  }, [activeTab, currentPage, itemsPerPage])
 
   const loadTemplates = async () => {
     try {
@@ -72,232 +92,154 @@ const DailyMenus = () => {
     }
   }
 
-  const loadProducts = async () => {
+  const loadRecurringMenus = async () => {
     try {
-      const response = await productService.getProducts({ size: 100, available: true })
+      setRecurringLoading(true)
+      const response = await recurringMenuService.getRecurringMenus()
       if (response.success && response.data) {
-        setProducts(response.data.content || [])
+        setRecurringMenus(response.data || [])
       }
     } catch (error) {
-      toast.error('Error al cargar productos')
+      toast.error(error.message || 'Error al cargar menús recurrentes')
+    } finally {
+      setRecurringLoading(false)
     }
   }
 
-  useEffect(() => {
-    if (hasRole(currentUser, USER_ROLES.ADMIN)) {
-      loadDailyMenus()
-      loadTemplates()
-      loadProducts()
+  const loadOverrides = async () => {
+    try {
+      setOverridesLoading(true)
+      const response = await dailyMenuService.getOverrides({
+        page: currentPage,
+        size: itemsPerPage
+      })
+      if (response.success && response.data) {
+        setOverrides(response.data.content || [])
+        setTotalElements(response.data.totalElements || 0)
+      }
+    } catch (error) {
+      toast.error(error.message || 'Error al cargar fechas específicas')
+    } finally {
+      setOverridesLoading(false)
     }
-  }, [currentPage, itemsPerPage])
-
-  const totalPages = Math.ceil(totalElements / itemsPerPage)
-  const startIndex = currentPage * itemsPerPage
-
-  const handleCreate = () => {
-    setModalMode('create')
-    setFieldErrors({})
-    setFormData({
-      menuDate: new Date().toISOString().split('T')[0],
-      templateId: '',
-      active: false,
-      selectedProducts: [],
-      priceOverrides: {},
-      sectionIds: {}
-    })
-    setShowModal(true)
   }
 
-  const handleEdit = (menu) => {
-    setModalMode('edit')
-    setSelectedMenu(menu)
-    setFieldErrors({})
+  const handleCreateRecurring = (dayOfWeek) => {
+    setModalMode('recurring')
+    setSelectedDayOfWeek(dayOfWeek)
     
-    const selectedProductIds = menu.items?.map(item => item.productId) || []
-    const overrides = {}
-    const sections = {}
-    menu.items?.forEach(item => {
-      if (item.priceOverride) {
-        overrides[item.productId] = item.priceOverride
-      }
-      if (item.sectionId) {
-        sections[item.productId] = item.sectionId
-      }
-    })
-
+    // Find existing configuration for this day
+    const existing = recurringMenus.find(m => m.dayOfWeek === dayOfWeek)
     setFormData({
-      menuDate: menu.menuDate,
-      templateId: menu.templateId || '',
-      active: menu.active,
-      selectedProducts: selectedProductIds,
-      priceOverrides: overrides,
-      sectionIds: sections
+      templateId: existing?.templateId || '',
+      menuDate: ''
     })
     setShowModal(true)
   }
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('¿Estás seguro de eliminar este menú diario?')) {
+  const handleCreateOverride = () => {
+    setModalMode('override-create')
+    setSelectedOverride(null)
+    setFormData({
+      templateId: '',
+      menuDate: new Date().toISOString().split('T')[0]
+    })
+    setShowModal(true)
+  }
+
+  const handleEditOverride = (override) => {
+    setModalMode('override-edit')
+    setSelectedOverride(override)
+    setFormData({
+      templateId: String(override.templateId),
+      menuDate: override.menuDate
+    })
+    setShowModal(true)
+  }
+
+  const handleDeleteRecurring = async (dayOfWeek) => {
+    const dayName = DAYS_OF_WEEK.find(d => d.value === dayOfWeek)?.name
+    if (!window.confirm(`¿Eliminar configuración para todos los ${dayName}?`)) {
       return
     }
-    
+
     try {
-      await dailyMenuService.deleteDailyMenu(id)
-      toast.success('Menú diario eliminado correctamente')
-      loadDailyMenus()
+      await recurringMenuService.deleteRecurringMenu(dayOfWeek)
+      toast.success('Configuración eliminada correctamente')
+      loadRecurringMenus()
     } catch (error) {
-      toast.error(error.message || 'Error al eliminar menú diario')
+      toast.error(error.message || 'Error al eliminar configuración')
     }
   }
 
-  const handleToggleActive = async (id) => {
+  const handleDeleteOverride = async (id, menuDate) => {
+    if (!window.confirm(`¿Eliminar menú específico del ${menuDate}?`)) {
+      return
+    }
+
     try {
-      await dailyMenuService.toggleActive(id)
-      toast.success('Estado del menú actualizado correctamente')
-      loadDailyMenus()
+      await dailyMenuService.deleteOverride(id)
+      toast.success('Menú específico eliminado correctamente')
+      loadOverrides()
     } catch (error) {
-      toast.error(error.message || 'Error al cambiar estado')
+      toast.error(error.message || 'Error al eliminar menú')
     }
   }
 
-  const handleLoadTemplate = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
     if (!formData.templateId) {
       toast.error('Selecciona una plantilla')
       return
     }
 
     try {
-      const response = await menuTemplateService.getTemplateById(formData.templateId)
-      const template = response.success && response.data ? response.data : response
-      
-      // Remove duplicates - keep only unique product IDs
-      const allProductIds = template.items?.map(item => item.productId) || []
-      const selectedProductIds = Array.from(new Set(allProductIds))
-      
-      const overrides = {}
-      const sections = {}
-      template.items?.forEach(item => {
-        // Only set if not already set (first occurrence wins)
-        if (item.priceOverride && !overrides[item.productId]) {
-          overrides[item.productId] = item.priceOverride
-        }
-        if (item.sectionId && !sections[item.productId]) {
-          sections[item.productId] = item.sectionId
-        }
-      })
-
-      setFormData(prev => ({
-        ...prev,
-        selectedProducts: selectedProductIds,
-        priceOverrides: overrides,
-        sectionIds: sections
-      }))
-
-      if (selectedProductIds.length < allProductIds.length) {
-        toast.success(`Plantilla cargada (${allProductIds.length - selectedProductIds.length} duplicado(s) eliminado(s))`)
-      } else {
-        toast.success('Plantilla cargada correctamente')
-      }
-    } catch (error) {
-      toast.error('Error al cargar plantilla')
-    }
-  }
-
-  const handleProductToggle = (productId) => {
-    setFormData(prev => {
-      const current = prev.selectedProducts || []
-      if (current.includes(productId)) {
-        const newOverrides = { ...prev.priceOverrides }
-        const newSections = { ...prev.sectionIds }
-        delete newOverrides[productId]
-        delete newSections[productId]
-        return {
-          ...prev,
-          selectedProducts: current.filter(id => id !== productId),
-          priceOverrides: newOverrides,
-          sectionIds: newSections
-        }
-      } else {
-        return {
-          ...prev,
-          selectedProducts: [...current, productId]
-        }
-      }
-    })
-  }
-
-  const handlePriceOverride = (productId, value) => {
-    setFormData(prev => ({
-      ...prev,
-      priceOverrides: {
-        ...prev.priceOverrides,
-        [productId]: value ? parseFloat(value) : null
-      }
-    }))
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setFieldErrors({})
-
-    const errors = {}
-    if (!formData.menuDate) {
-      errors.menuDate = 'La fecha es requerida'
-    }
-    if (!formData.selectedProducts || formData.selectedProducts.length === 0) {
-      errors.selectedProducts = 'Selecciona al menos un producto'
-    }
-    
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors)
-      return
-    }
-    
-    try {
       setSubmitting(true)
-      
-      const items = formData.selectedProducts.map(productId => ({
-        productId: productId,
-        sectionId: formData.sectionIds[productId] || null,
-        priceOverride: formData.priceOverrides[productId] || null
-      }))
 
-      console.log('🔍 DEBUG - Selected products:', formData.selectedProducts)
-      console.log('🔍 DEBUG - Items to send:', items)
-      console.log('🔍 DEBUG - Available products:', products.map(p => ({ id: p.id, name: p.name })))
-
-      const payload = {
-        items: items,
-        active: formData.active
-      }
-
-      if (modalMode === 'create') {
-        payload.menuDate = formData.menuDate
-        payload.templateId = formData.templateId || null
-        await dailyMenuService.createDailyMenu(payload)
-        toast.success('Menú diario creado correctamente')
+      if (modalMode === 'recurring') {
+        await recurringMenuService.createOrUpdateRecurringMenu({
+          dayOfWeek: selectedDayOfWeek,
+          templateId: formData.templateId
+        })
+        toast.success('Configuración guardada correctamente')
+        loadRecurringMenus()
       } else {
-        payload.templateId = formData.templateId || null
-        await dailyMenuService.updateDailyMenu(selectedMenu.id, payload)
-        toast.success('Menú diario actualizado correctamente')
+        if (!formData.menuDate) {
+          toast.error('Selecciona una fecha')
+          return
+        }
+        const overrideData = {
+          menuDate: formData.menuDate,
+          templateId: formData.templateId
+        }
+        if (modalMode === 'override-edit') {
+          await dailyMenuService.updateOverride(selectedOverride.id, overrideData)
+          toast.success('Fecha actualizada correctamente')
+        } else {
+          await dailyMenuService.createOverride(overrideData)
+          toast.success('Fecha añadida correctamente')
+        }
+        loadOverrides()
       }
-      
+
       setShowModal(false)
-      loadDailyMenus()
     } catch (error) {
-      toast.error(error.message || 'Error al guardar el menú diario')
+      toast.error(error.message || 'Error al guardar')
     } finally {
       setSubmitting(false)
     }
   }
 
-  if (loading && dailyMenus.length === 0) {
+  const totalPages = Math.ceil(totalElements / itemsPerPage)
+
+  if ((recurringLoading && activeTab === 'recurring') || (overridesLoading && activeTab === 'overrides')) {
     return (
       <Layout>
         <div className="users-page">
           <div className="loading-state">
             <div className="spinner"></div>
-            <p>Cargando menús diarios...</p>
+            <p>Cargando...</p>
           </div>
         </div>
       </Layout>
@@ -308,547 +250,359 @@ const DailyMenus = () => {
     <Layout>
       <div className="users-page">
         <ToastContainer toasts={toast.toasts} removeToast={toast.removeToast} />
-        
+
+        {/* Header */}
         <div className="users-header">
           <div>
             <h1 className="page-title">Menús Diarios</h1>
-            <p className="page-subtitle">Administra la carta del día</p>
-          </div>
-          <div className="users-header-actions">
-            <button className="btn-secondary" onClick={loadDailyMenus} disabled={loading}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={loading ? 'spinning' : ''}>
-                <polyline points="23 4 23 10 17 10" />
-                <polyline points="1 20 1 14 7 14" />
-                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-              </svg>
-              Refrescar
-            </button>
-            <button className="btn-action" onClick={handleCreate}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              Nuevo Menú Diario
-            </button>
+            <p className="page-subtitle">Configura menús recurrentes por día de semana o crea menús para fechas específicas</p>
           </div>
         </div>
 
-        <div className="table-controls">
-          <div className="table-info">
-            <span className="results-count">
-              Mostrando {dailyMenus.length === 0 ? 0 : startIndex + 1} - {Math.min(startIndex + itemsPerPage, totalElements)} de {totalElements} menús
-            </span>
-          </div>
-          <div className="pagination-controls">
-            <div className="items-per-page">
-              <label htmlFor="itemsPerPage">Registros por página:</label>
-              <select
-                id="itemsPerPage"
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value))
-                  setCurrentPage(0)
-                }}
-              >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-              </select>
-            </div>
-            {totalPages > 1 && (
-              <div className="pagination">
-                <button
-                  className="pagination-btn"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 0))}
-                  disabled={currentPage === 0}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="15 18 9 12 15 6" />
-                  </svg>
-                </button>
-                
-                <span className="pagination-info">
-                  Página {currentPage + 1} de {totalPages}
-                </span>
-                
-                <button
-                  className="pagination-btn"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages - 1))}
-                  disabled={currentPage === totalPages - 1}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-              </div>
-            )}
-          </div>
+        {/* Tabs */}
+        <div style={{ 
+          display: 'flex', 
+          gap: '1rem', 
+          marginBottom: '1.5rem',
+          borderBottom: '2px solid #e0e0e0'
+        }}>
+          <button
+            onClick={() => setActiveTab('recurring')}
+            style={{
+              padding: '12px 24px',
+              border: 'none',
+              background: 'transparent',
+              borderBottom: activeTab === 'recurring' ? '3px solid #2196F3' : '3px solid transparent',
+              color: activeTab === 'recurring' ? '#2196F3' : '#666',
+              fontWeight: activeTab === 'recurring' ? '600' : '400',
+              fontSize: '1rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              marginBottom: '-2px'
+            }}
+          >
+            Menús Recurrentes
+          </button>
+          <button
+            onClick={() => setActiveTab('overrides')}
+            style={{
+              padding: '12px 24px',
+              border: 'none',
+              background: 'transparent',
+              borderBottom: activeTab === 'overrides' ? '3px solid #2196F3' : '3px solid transparent',
+              color: activeTab === 'overrides' ? '#2196F3' : '#666',
+              fontWeight: activeTab === 'overrides' ? '600' : '400',
+              fontSize: '1rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              marginBottom: '-2px'
+            }}
+          >
+            Fechas Específicas
+          </button>
         </div>
 
-        <div className="users-table-container card">
-          {loading ? (
-            <div className="loading-overlay">
-              <div className="spinner"></div>
-            </div>
-          ) : (
-            <>
-              {dailyMenus.map(menu => (
-                <div 
-                  key={menu.id} 
-                  style={{ 
-                    marginBottom: '24px', 
-                    border: menu.active ? '3px solid #4CAF50' : '2px solid #e8e8e8', 
-                    borderRadius: '12px', 
-                    padding: '20px',
-                    backgroundColor: menu.active ? '#f1f8f4' : '#fafafa',
-                    boxShadow: menu.active ? '0 4px 12px rgba(76,175,80,0.2)' : '0 2px 8px rgba(0,0,0,0.08)',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!menu.active) {
-                      e.currentTarget.style.borderColor = '#2196F3'
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(33,150,243,0.15)'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!menu.active) {
-                      e.currentTarget.style.borderColor = '#e8e8e8'
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'
-                    }
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <div>
-                      <h3 style={{ 
-                        margin: 0, 
-                        fontSize: '1.3em', 
-                        color: '#1a1a1a', 
-                        fontWeight: '600',
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '10px',
-                        textTransform: 'capitalize'
-                      }}>
-                        <svg 
-                          viewBox="0 0 24 24" 
-                          fill="none" 
-                          stroke="currentColor" 
-                          strokeWidth="2"
-                          style={{ width: '24px', height: '24px', color: menu.active ? '#4CAF50' : '#666' }}
-                        >
-                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                          <line x1="16" y1="2" x2="16" y2="6" />
-                          <line x1="8" y1="2" x2="8" y2="6" />
-                          <line x1="3" y1="10" x2="21" y2="10" />
-                        </svg>
-                        {new Date(menu.menuDate + 'T00:00:00').toLocaleDateString('es-ES', { 
-                          weekday: 'long', 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })}
-                        {menu.active && (
-                          <span style={{
-                            backgroundColor: '#4CAF50',
-                            color: 'white',
-                            padding: '4px 12px',
-                            borderRadius: '20px',
-                            fontSize: '0.6em',
-                            fontWeight: '700',
-                            letterSpacing: '0.5px',
-                            textTransform: 'uppercase',
-                            boxShadow: '0 2px 4px rgba(76,175,80,0.3)'
-                          }}>
-                            ● ACTIVO
-                          </span>
-                        )}
-                      </h3>
-                      <p style={{ margin: '6px 0 0 32px', color: '#666', fontSize: '0.95em' }}>
-                        <svg 
-                          viewBox="0 0 24 24" 
-                          fill="none" 
-                          stroke="currentColor" 
-                          strokeWidth="2"
-                          style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }}
-                        >
-                          <circle cx="9" cy="21" r="1" />
-                          <circle cx="20" cy="21" r="1" />
-                          <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
-                        </svg>
-                        {menu.items?.length || 0} productos en total
-                        {menu.templateName && (
-                          <>
-                            <span style={{ margin: '0 6px', color: '#ccc' }}>•</span>
-                            <svg 
-                              viewBox="0 0 24 24" 
-                              fill="none" 
-                              stroke="currentColor" 
-                              strokeWidth="2"
-                              style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }}
+        {/* Tab Content */}
+        {activeTab === 'recurring' ? (
+          <div className="card" style={{ padding: '0' }}>
+            <div className="users-table-container">
+              <table className="users-table" style={{ tableLayout: 'fixed' }}>
+                <colgroup>
+                  <col style={{ width: '20%' }} />
+                  <col style={{ width: '50%' }} />
+                  <col style={{ width: '30%' }} />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Día</th>
+                    <th>Plantilla Configurada</th>
+                    <th style={{ textAlign: 'right' }}>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {DAYS_OF_WEEK.map(day => {
+                    const config = recurringMenus.find(m => m.dayOfWeek === day.value)
+                    return (
+                      <tr key={day.value}>
+                        <td style={{ fontWeight: '600' }}>{day.name}</td>
+                        <td>
+                          {config ? (
+                            <span style={{
+                              padding: '4px 12px',
+                              background: '#fff3e0',
+                              borderRadius: '6px',
+                              fontSize: '0.9em',
+                              fontWeight: '500',
+                              color: '#e65100'
+                            }}>
+                              {config.templateName}
+                            </span>
+                          ) : (
+                            <span style={{ color: '#999', fontStyle: 'italic' }}>Sin configurar</span>
+                          )}
+                        </td>
+                        <td className="actions-cell" style={{ justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={() => handleCreateRecurring(day.value)}
+                            className={config ? 'btn-icon btn-edit' : 'btn-icon'}
+                            title={config ? 'Editar' : 'Configurar'}
+                            style={config ? undefined : {
+                              padding: '6px 12px',
+                              background: '#d1ecf1',
+                              fontSize: '0.9em',
+                              fontWeight: '500'
+                            }}
+                          >
+                            {config ? (
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                              </svg>
+                            ) : '➕ Configurar'}
+                          </button>
+                          {config && (
+                            <button
+                              onClick={() => handleDeleteRecurring(day.value)}
+                              className="btn-icon btn-deactivate"
+                              title="Eliminar"
                             >
-                              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                              <polyline points="14 2 14 8 20 8" />
-                            </svg>
-                            {menu.templateName}
-                          </>
-                        )}
-                      </p>
-                    </div>
-                    <div className="actions-cell" style={{ gap: '8px' }}>
-                      <button
-                        className={`btn-icon ${menu.active ? 'btn-deactivate' : 'btn-activate'}`}
-                        onClick={() => handleToggleActive(menu.id)}
-                        title={menu.active ? 'Desactivar' : 'Activar'}
-                        style={{ 
-                          width: '40px',
-                          height: '40px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        {menu.active ? (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="15" y1="9" x2="9" y2="15" />
-                            <line x1="9" y1="9" x2="15" y2="15" />
-                          </svg>
-                        ) : (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        )}
-                      </button>
-                      <button
-                        className="btn-icon btn-edit"
-                        onClick={() => handleEdit(menu)}
-                        title="Editar"
-                        style={{ 
-                          width: '40px',
-                          height: '40px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
-                          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                      </button>
-                      <button
-                        className="btn-icon btn-deactivate"
-                        onClick={() => handleDelete(menu.id)}
-                        title="Eliminar"
-                        style={{ 
-                          width: '40px',
-                          height: '40px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  {menu.items && menu.items.length > 0 && (
-                    <div style={{ marginTop: '16px', backgroundColor: 'white', borderRadius: '8px', padding: '12px' }}>
-                      {(() => {
-                        // Agrupar items por sección
-                        const itemsBySection = {}
-                        const itemsWithoutSection = []
-                        
-                        menu.items.forEach(item => {
-                          if (item.sectionId) {
-                            if (!itemsBySection[item.sectionId]) {
-                              itemsBySection[item.sectionId] = {
-                                name: item.sectionName,
-                                items: []
-                              }
-                            }
-                            itemsBySection[item.sectionId].items.push(item)
-                          } else {
-                            itemsWithoutSection.push(item)
-                          }
-                        })
-
-                        return (
-                          <>
-                            {/* Productos sin sección */}
-                            {itemsWithoutSection.length > 0 && (
-                              <div style={{ 
-                                marginBottom: '24px',
-                                border: '1px dashed #d0d0d0',
-                                borderRadius: '6px',
-                                padding: '12px',
-                                backgroundColor: '#f9f9f9'
-                              }}>
-                                <h4 style={{ 
-                                  margin: '0 0 12px 0', 
-                                  color: '#999', 
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                              </svg>
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div>
+            {/* Overrides Table */}
+            <div className="card" style={{ padding: '0' }}>
+              <div className="users-table-container">
+                    <table className="users-table" style={{ tableLayout: 'fixed' }}>
+                      <colgroup>
+                        <col style={{ width: '22%' }} />
+                        <col style={{ width: '16%' }} />
+                        <col style={{ width: '37%' }} />
+                        <col style={{ width: '25%' }} />
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          <th>Fecha</th>
+                          <th>Día</th>
+                          <th>Plantilla</th>
+                          <th style={{ textAlign: 'right' }}>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {overrides.map(override => {
+                          const date = parseLocalDate(override.menuDate)
+                          const dayName = DAYS_OF_WEEK[date.getDay() === 0 ? 6 : date.getDay() - 1]?.name
+                          
+                          return (
+                            <tr key={override.id}>
+                              <td style={{ fontWeight: '600' }}>{formatDate(override.menuDate)}</td>
+                              <td>{dayName}</td>
+                              <td>
+                                <span style={{ 
+                                  padding: '4px 12px',
+                                  background: '#fff3e0',
+                                  borderRadius: '6px',
                                   fontSize: '0.9em',
                                   fontWeight: '500',
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.5px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '6px'
+                                  color: '#e65100'
                                 }}>
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '14px', height: '14px' }}>
-                                    <circle cx="12" cy="12" r="1" />
-                                    <circle cx="12" cy="5" r="1" />
-                                    <circle cx="12" cy="19" r="1" />
+                                  {override.templateName}
+                                </span>
+                              </td>
+                              <td className="actions-cell" style={{ justifyContent: 'flex-end' }}>
+                                <button
+                                  onClick={() => handleEditOverride(override)}
+                                  className="btn-icon btn-edit"
+                                  title="Editar"
+                                >
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                                   </svg>
-                                  Sin sección
-                                </h4>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                  {itemsWithoutSection.map(item => (
-                                    <div key={item.id} style={{
-                                      display: 'flex',
-                                      justifyContent: 'space-between',
-                                      alignItems: 'center',
-                                      padding: '10px 12px',
-                                      backgroundColor: 'white',
-                                      borderRadius: '6px',
-                                      border: '1px solid #e0e0e0'
-                                    }}>
-                                      <span style={{ fontWeight: '500', fontSize: '0.95em' }}>{item.productName}</span>
-                                      {item.effectivePrice > 0 && (
-                                        <span style={{ fontSize: '1.1em', fontWeight: '600', color: '#2e7d32' }}>S/ {item.effectivePrice.toFixed(2)}</span>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteOverride(override.id, override.menuDate)}
+                                  className="btn-icon btn-deactivate"
+                                  title="Eliminar"
+                                >
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                  </svg>
+                                </button>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                        {overrides.length === 0 && (
+                          <tr>
+                            <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: '#999' }}>
+                              No hay fechas específicas configuradas
+                            </td>
+                          </tr>
+                        )}
+                        <tr>
+                          <td colSpan="3"></td>
+                          <td className="actions-cell" style={{ justifyContent: 'flex-end' }}>
+                            <button
+                              onClick={handleCreateOverride}
+                              className="btn-icon"
+                              style={{
+                                padding: '6px 12px',
+                                background: '#d1ecf1',
+                                fontSize: '0.9em',
+                                fontWeight: '500',
+                                gap: '6px'
+                              }}
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                              </svg>
+                              Añadir fecha
+                            </button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
 
-                            {/* Productos por sección */}
-                            {Object.values(itemsBySection).map((section, idx) => (
-                              <div key={idx} style={{ 
-                                marginBottom: '24px',
-                                border: '2px solid #c8e6c9',
-                                borderRadius: '8px',
-                                padding: '16px',
-                                backgroundColor: '#f1f8f4'
-                              }}>
-                                <h4 style={{ 
-                                  margin: '0 0 12px 0', 
-                                  color: '#2e7d32', 
-                                  fontSize: '1.05em',
-                                  fontWeight: '700',
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.8px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '8px',
-                                  borderBottom: '2px solid #4CAF50',
-                                  paddingBottom: '8px'
-                                }}>
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '18px', height: '18px' }}>
-                                    <path d="M4 7h16M4 12h16M4 17h10" />
-                                  </svg>
-                                  {section.name}
-                                </h4>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                  {section.items.map(item => {
-                                    // No mostrar precio solo para ENTRADAS y SOPAS (incluidos en el menú)
-                                    const sectionNameUpper = section.name.toUpperCase();
-                                    const showPrice = !sectionNameUpper.includes('ENTRADA') && 
-                                                     !sectionNameUpper.includes('SOPA') &&
-                                                     item.effectivePrice > 0;
-                                    
-                                    return (
-                                      <div key={item.id} style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        padding: '10px 12px',
-                                        backgroundColor: 'white',
-                                        borderRadius: '6px',
-                                        border: '1px solid #e0e0e0'
-                                      }}>
-                                        <span style={{ fontWeight: '500', fontSize: '0.95em' }}>{item.productName}</span>
-                                        {showPrice && (
-                                          <span style={{ fontSize: '1.1em', fontWeight: '600', color: '#2e7d32' }}>S/ {item.effectivePrice.toFixed(2)}</span>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            ))}
-                          </>
-                        )
-                      })()}
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="table-controls" style={{ padding: '1rem', borderTop: '1px solid #e0e0e0' }}>
+                      <div className="items-per-page">
+                        <label htmlFor="itemsPerPage" style={{ marginRight: '8px', fontWeight: '500', color: '#555' }}>
+                          Registros por página:
+                        </label>
+                        <select
+                          id="itemsPerPage"
+                          value={itemsPerPage}
+                          onChange={(e) => {
+                            setItemsPerPage(Number(e.target.value))
+                            setCurrentPage(0)
+                          }}
+                        >
+                          <option value="5">5</option>
+                          <option value="10">10</option>
+                          <option value="20">20</option>
+                        </select>
+                      </div>
+
+                      <div className="pagination-controls">
+                        <div className="pagination">
+                          <button
+                            className="pagination-btn"
+                            onClick={() => setCurrentPage(0)}
+                            disabled={currentPage === 0}
+                          >
+                            ⏮️ Primera
+                          </button>
+                          <button
+                            className="pagination-btn"
+                            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                            disabled={currentPage === 0}
+                          >
+                            ⬅️ Anterior
+                          </button>
+                          <span className="pagination-info">
+                            Página {currentPage + 1} de {totalPages}
+                          </span>
+                          <button
+                            className="pagination-btn"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                            disabled={currentPage >= totalPages - 1}
+                          >
+                            Siguiente ➡️
+                          </button>
+                          <button
+                            className="pagination-btn"
+                            onClick={() => setCurrentPage(totalPages - 1)}
+                            disabled={currentPage >= totalPages - 1}
+                          >
+                            Última ⏭️
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
-                </div>
-              ))}
-            </>
-          )}
-
-          {dailyMenus.length === 0 && !loading && (
-            <div className="empty-state">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-              <p>No se encontraron menús diarios</p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Modal Crear/Editar Menú Diario */}
+        {/* Modal */}
         {showModal && (
-          <div className="modal-overlay" onClick={() => !submitting && setShowModal(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px', maxHeight: '90vh', overflow: 'auto' }}>
+          <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
               <div className="modal-header">
-                <h2>{modalMode === 'create' ? 'Crear Menú Diario' : 'Editar Menú Diario'}</h2>
-                <button 
-                  className="modal-close" 
-                  onClick={() => setShowModal(false)}
-                  disabled={submitting}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
+                <h2 className="modal-title">
+                  {modalMode === 'recurring' 
+                    ? `Configurar ${DAYS_OF_WEEK.find(d => d.value === selectedDayOfWeek)?.name}` 
+                    : modalMode === 'override-edit' ? 'Editar fecha' : 'Añadir fecha'}
+                </h2>
+                <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
               </div>
 
-              <form className="modal-form" onSubmit={handleSubmit}>
-                <div className="form-row">
+              <form onSubmit={handleSubmit}>
+                {modalMode.startsWith('override') && (
                   <div className="form-group">
-                    <label htmlFor="menuDate">Fecha <span className="required">*</span></label>
+                    <label className="label">
+                      Fecha <span className="required">*</span>
+                    </label>
                     <input
-                      id="menuDate"
                       type="date"
-                      className={`input ${fieldErrors.menuDate ? 'input-error' : ''}`}
+                      className="input"
                       value={formData.menuDate}
-                      onChange={(e) => {
-                        setFormData({ ...formData, menuDate: e.target.value })
-                        if (fieldErrors.menuDate) setFieldErrors(prev => ({ ...prev, menuDate: '' }))
-                      }}
-                      disabled={submitting || modalMode === 'edit'}
+                      onChange={(e) => setFormData(prev => ({ ...prev, menuDate: e.target.value }))}
+                      required
+                      disabled={submitting}
                     />
-                    {fieldErrors.menuDate && <div className="field-error-text">{fieldErrors.menuDate}</div>}
                   </div>
-
-                  <div className="form-group">
-                    <label htmlFor="active">Estado</label>
-                    <select
-                      id="active"
-                      className="input select-input"
-                      value={formData.active}
-                      onChange={(e) => setFormData({ ...formData, active: e.target.value === 'true' })}
-                      disabled={submitting}
-                    >
-                      <option value="false">Inactivo</option>
-                      <option value="true">Activo</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="templateId">Plantilla (opcional)</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <select
-                      id="templateId"
-                      className="input select-input"
-                      value={formData.templateId}
-                      onChange={(e) => setFormData({ ...formData, templateId: e.target.value })}
-                      disabled={submitting}
-                      style={{ flex: 1 }}
-                    >
-                      <option value="">Sin plantilla</option>
-                      {templates.map(template => (
-                        <option key={template.id} value={template.id}>{template.name}</option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={handleLoadTemplate}
-                      disabled={!formData.templateId || submitting}
-                      style={{ whiteSpace: 'nowrap' }}
-                    >
-                      Cargar Plantilla
-                    </button>
-                  </div>
-                </div>
-
-                <div className="info-message">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="16" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                  </svg>
-                  <span>Selecciona los productos y personaliza precios si es necesario</span>
-                </div>
-
-                <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #ddd', borderRadius: '6px', padding: '8px' }}>
-                  {products.map(product => (
-                    <div key={product.id} style={{ 
-                      padding: '12px', 
-                      border: '1px solid #ddd', 
-                      borderRadius: '6px', 
-                      marginBottom: '8px',
-                      backgroundColor: formData.selectedProducts.includes(product.id) ? '#f0f7ff' : 'white'
-                    }}>
-                      <label style={{ display: 'flex', alignItems: 'flex-start', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={formData.selectedProducts.includes(product.id)}
-                          onChange={() => handleProductToggle(product.id)}
-                          disabled={submitting}
-                          style={{ marginRight: '12px', marginTop: '4px' }}
-                        />
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: '500', marginBottom: '4px' }}>
-                            {product.name}
-                          </div>
-                          <div style={{ fontSize: '0.9em', color: '#666', marginBottom: '8px' }}>
-                            Precio base: S/ {product.price.toFixed(2)}
-                          </div>
-                          {formData.selectedProducts.includes(product.id) && (
-                            <div style={{ marginTop: '8px' }}>
-                              <label style={{ fontSize: '0.9em', display: 'block', marginBottom: '4px' }}>
-                                Precio personalizado (opcional):
-                              </label>
-                              <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                className="input"
-                                placeholder={product.price.toFixed(2)}
-                                value={formData.priceOverrides[product.id] || ''}
-                                onChange={(e) => handlePriceOverride(product.id, e.target.value)}
-                                disabled={submitting}
-                                style={{ width: '150px' }}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </label>
-                    </div>
-                  ))}
-                </div>
-
-                {fieldErrors.selectedProducts && (
-                  <div className="field-error-text">{fieldErrors.selectedProducts}</div>
                 )}
 
-                <div className="required-legend">
-                  <span className="required">*</span> Campos obligatorios
+                <div className="form-group">
+                  <label className="label">
+                    Plantilla <span className="required">*</span>
+                  </label>
+                  <select
+                    className="input"
+                    value={formData.templateId}
+                    onChange={(e) => setFormData(prev => ({ ...prev, templateId: e.target.value }))}
+                    required
+                    disabled={submitting}
+                  >
+                    <option value="">Seleccionar plantilla...</option>
+                    {templates.map(template => (
+                      <option key={template.id} value={template.id}>
+                        {template.name} ({template.itemCount} productos)
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
+                {modalMode === 'recurring' && (
+                  <div style={{ 
+                    padding: '12px', 
+                    background: '#e3f2fd', 
+                    borderRadius: '8px',
+                    fontSize: '0.9em',
+                    color: '#1976d2',
+                    marginTop: '12px'
+                  }}>
+                    ℹ️ Esta plantilla se aplicará automáticamente todos los {DAYS_OF_WEEK.find(d => d.value === selectedDayOfWeek)?.name}s
+                  </div>
+                )}
 
                 <div className="modal-actions">
                   <button 
@@ -864,7 +618,7 @@ const DailyMenus = () => {
                     className="btn btn-primary"
                     disabled={submitting}
                   >
-                    {submitting ? 'Guardando...' : modalMode === 'create' ? 'Crear Menú' : 'Guardar Cambios'}
+                    {submitting ? 'Guardando...' : 'Guardar'}
                   </button>
                 </div>
               </form>

@@ -6,7 +6,7 @@ const productService = {
   getProducts: async (params = {}) => {
     try {
       const response = await api.get(PRODUCTS.BASE, { params })
-      return response.data?.data || response.data
+      return response
     } catch (error) {
       console.error('Error loading products:', error)
       throw new Error(error.response?.data?.message || error.message || 'Error al cargar productos')
@@ -17,7 +17,7 @@ const productService = {
   getProductById: async (id) => {
     try {
       const response = await api.get(PRODUCTS.BY_ID(id))
-      return response.data?.data || response.data
+      return response
     } catch (error) {
       console.error('Error loading product:', error)
       throw new Error(error.response?.data?.message || error.message || 'Error al cargar producto')
@@ -28,7 +28,7 @@ const productService = {
   createProduct: async (data) => {
     try {
       const response = await api.post(PRODUCTS.BASE, data)
-      return response.data?.data || response.data
+      return response
     } catch (error) {
       console.error('Error creating product:', error)
       throw new Error(error.response?.data?.message || error.message || 'Error al crear producto')
@@ -39,7 +39,7 @@ const productService = {
   updateProduct: async (id, data) => {
     try {
       const response = await api.put(PRODUCTS.BY_ID(id), data)
-      return response.data?.data || response.data
+      return response
     } catch (error) {
       console.error('Error updating product:', error)
       throw new Error(error.response?.data?.message || error.message || 'Error al actualizar producto')
@@ -49,7 +49,8 @@ const productService = {
   // Delete product
   deleteProduct: async (id) => {
     try {
-      await api.delete(PRODUCTS.BY_ID(id))
+      const response = await api.delete(PRODUCTS.BY_ID(id))
+      return response
     } catch (error) {
       console.error('Error deleting product:', error)
       throw new Error(error.response?.data?.message || error.message || 'Error al eliminar producto')
@@ -60,7 +61,7 @@ const productService = {
   toggleAvailability: async (id) => {
     try {
       const response = await api.patch(PRODUCTS.TOGGLE_AVAILABILITY(id))
-      return response.data?.data || response.data
+      return response
     } catch (error) {
       console.error('Error toggling availability:', error)
       throw new Error(error.response?.data?.message || error.message || 'Error al cambiar disponibilidad')

@@ -7,6 +7,7 @@ import { useToast, ToastContainer } from '../components/Toast/Toast'
 import menuTemplateService from '../services/menuTemplateService'
 import menuSectionService from '../services/menuSectionService'
 import productService from '../services/productService'
+import productCategoryService from '../services/productCategoryService'
 import '../pages/Users.css'
 
 const MenuTemplates = () => {
@@ -23,9 +24,11 @@ const MenuTemplates = () => {
 
   const [templates, setTemplates] = useState([])
   const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
   const [sections, setSections] = useState([])
   const [loading, setLoading] = useState(true)
   const [totalElements, setTotalElements] = useState(0)
+  const [expandedTemplates, setExpandedTemplates] = useState(new Set())
   const [showModal, setShowModal] = useState(false)
   const [showItemsModal, setShowItemsModal] = useState(false)
   const [showSectionsModal, setShowSectionsModal] = useState(false)
@@ -51,9 +54,10 @@ const MenuTemplates = () => {
   })
 
   const [itemsFormData, setItemsFormData] = useState({
-    selectedProducts: [],
-    priceOverrides: {},
-    sectionId: null
+    productsBySection: {}, // { sectionId: [productIds] }
+    currentSectionId: null,
+    selectedCategories: [], // Array de categoryIds seleccionadas
+    hasExistingItems: false // Flag para saber si está editando
   })
 
   const loadTemplates = async () => {
@@ -79,18 +83,26 @@ const MenuTemplates = () => {
     try {
       const response = await menuSectionService.getSections(templateId)
       if (response.success && response.data) {
-        setSections(response.data || [])
+        const sectionsData = Array.isArray(response.data) ? response.data : []
+        setSections(sectionsData)
+        return sectionsData // Retornar las secciones para uso inmediato
       } else {
-        setSections(response || [])
+        setSections([])
+        if (!response.success) {
+          console.warn('Sections endpoint not implemented yet')
+        }
+        return []
       }
     } catch (error) {
-      toast.error('Error al cargar secciones')
+      setSections([])
+      console.error('Error loading sections:', error)
+      return []
     }
   }
 
   const loadProducts = async () => {
     try {
-      const response = await productService.getProducts({ size: 100, available: true })
+      const response = await productService.getProducts({ size: 1000, available: true })
       if (response.success && response.data) {
         setProducts(response.data.content || [])
       }
@@ -99,10 +111,22 @@ const MenuTemplates = () => {
     }
   }
 
+  const loadCategories = async () => {
+    try {
+      const response = await productCategoryService.getCategories({ size: 100 })
+      if (response.success && response.data) {
+        setCategories(response.data.content || [])
+      }
+    } catch (error) {
+      console.error('Error al cargar categorías:', error)
+    }
+  }
+
   useEffect(() => {
     if (hasRole(currentUser, USER_ROLES.ADMIN)) {
       loadTemplates()
       loadProducts()
+      loadCategories()
     }
   }, [currentPage, itemsPerPage])
 
@@ -174,12 +198,52 @@ const MenuTemplates = () => {
 
   const handleManageItems = async (template) => {
     setSelectedTemplate(template)
-    await loadSections(template.id)
+    const sectionsData = await loadSections(template.id)
+    
+    // Cargar productos actuales del template para pre-marcar checkboxes
+    const productsBySection = {}
+    const hasItems = template.items && template.items.length > 0
+    
+    if (hasItems) {
+      template.items.forEach(item => {
+        // Solo cargar items que tienen sección (eliminar "Sin sección")
+        if (item.sectionId) {
+          const sectionKey = String(item.sectionId)
+          if (!productsBySection[sectionKey]) {
+            productsBySection[sectionKey] = []
+          }
+          productsBySection[sectionKey].push(item.masterProductId)
+        }
+      })
+    }
+    
+    // Seleccionar la primera sección si existe
+    const firstSectionId = sectionsData.length > 0 ? sectionsData[0].id : null
+    
+    // Auto-seleccionar categorías de la primera sección si tiene productos
+    let initialCategories = []
+    if (firstSectionId) {
+      const sectionKey = String(firstSectionId)
+      const productsInSection = productsBySection[sectionKey] || []
+      const categoryIds = new Set()
+      
+      productsInSection.forEach(productId => {
+        const product = products.find(p => p.id === productId)
+        if (product && product.categoryId) {
+          categoryIds.add(product.categoryId)
+        }
+      })
+      
+      initialCategories = Array.from(categoryIds)
+    }
+    
     setItemsFormData({
-      selectedProducts: [],
-      priceOverrides: {},
-      sectionId: null
+      productsBySection,
+      currentSectionId: firstSectionId,
+      selectedCategories: initialCategories,
+      hasExistingItems: hasItems
     })
+    
     setShowItemsModal(true)
   }
 
@@ -248,23 +312,43 @@ const MenuTemplates = () => {
   const handleAddItems = async (e) => {
     e.preventDefault()
     
-    if (itemsFormData.selectedProducts.length === 0) {
-      toast.error('Selecciona al menos un producto')
+    // Contar total de productos seleccionados
+    const totalProducts = Object.values(itemsFormData.productsBySection).reduce(
+      (sum, products) => sum + products.length, 
+      0
+    )
+    
+    if (totalProducts === 0) {
+      toast.error('Selecciona al menos un producto en alguna sección')
       return
     }
 
     try {
       setSubmitting(true)
       
-      const items = itemsFormData.selectedProducts.map(productId => ({
-        productId: productId,
-        sectionId: itemsFormData.sectionId || null,
-        priceOverride: itemsFormData.priceOverrides[productId] || null
-      }))
+      // Convertir productsBySection a la estructura que espera el backend
+      const items = []
+      let globalOrder = 0
+      
+      Object.entries(itemsFormData.productsBySection).forEach(([sectionId, productIds]) => {
+        productIds.forEach(productId => {
+          items.push({
+            masterProductId: productId,
+            sectionId: parseInt(sectionId), // Siempre será un número, ya no hay 'null'
+            displayOrder: globalOrder++
+          })
+        })
+      })
 
-      await menuTemplateService.addItems(selectedTemplate.id, items)
-      toast.success('Productos agregados correctamente')
+      await menuTemplateService.addItems(selectedTemplate.id, { items })
+      toast.success(itemsFormData.hasExistingItems ? 'Cambios guardados correctamente' : 'Productos agregados correctamente')
       setShowItemsModal(false)
+      setItemsFormData({
+        productsBySection: {},
+        currentSectionId: null,
+        selectedCategories: [],
+        hasExistingItems: false
+      })
       loadTemplates()
     } catch (error) {
       toast.error(error.message || 'Error al agregar productos')
@@ -318,32 +402,64 @@ const MenuTemplates = () => {
 
   const handleProductToggle = (productId) => {
     setItemsFormData(prev => {
-      const current = prev.selectedProducts || []
-      if (current.includes(productId)) {
-        const newOverrides = { ...prev.priceOverrides }
-        delete newOverrides[productId]
-        return {
-          selectedProducts: current.filter(id => id !== productId),
-          priceOverrides: newOverrides,
-          sectionId: prev.sectionId
+      if (!prev.currentSectionId) return prev // Requerir sección seleccionada
+      
+      const sectionKey = String(prev.currentSectionId)
+      const currentProducts = prev.productsBySection[sectionKey] || []
+      
+      const newProductsBySection = { ...prev.productsBySection }
+      
+      if (currentProducts.includes(productId)) {
+        // Remover producto
+        newProductsBySection[sectionKey] = currentProducts.filter(id => id !== productId)
+        // Si la sección queda vacía, eliminarla del objeto
+        if (newProductsBySection[sectionKey].length === 0) {
+          delete newProductsBySection[sectionKey]
         }
       } else {
-        return {
-          ...prev,
-          selectedProducts: [...current, productId]
-        }
+        // Agregar producto
+        newProductsBySection[sectionKey] = [...currentProducts, productId]
+      }
+      
+      return {
+        ...prev,
+        productsBySection: newProductsBySection
       }
     })
   }
 
-  const handlePriceOverride = (productId, value) => {
-    setItemsFormData(prev => ({
-      ...prev,
-      priceOverrides: {
-        ...prev.priceOverrides,
-        [productId]: value ? parseFloat(value) : null
+  const handleCategoryToggle = (categoryId) => {
+    setItemsFormData(prev => {
+      const isSelected = prev.selectedCategories.includes(categoryId)
+      return {
+        ...prev,
+        selectedCategories: isSelected
+          ? prev.selectedCategories.filter(id => id !== categoryId)
+          : [...prev.selectedCategories, categoryId]
       }
-    }))
+    })
+  }
+
+  const handleSectionChange = (sectionId) => {
+    setItemsFormData(prev => {
+      const sectionKey = String(sectionId)
+      const productsInSection = prev.productsBySection[sectionKey] || []
+      
+      // Auto-seleccionar categorías de los productos que ya están en esta sección
+      const categoryIds = new Set()
+      productsInSection.forEach(productId => {
+        const product = products.find(p => p.id === productId)
+        if (product && product.categoryId) {
+          categoryIds.add(product.categoryId)
+        }
+      })
+      
+      return {
+        ...prev,
+        currentSectionId: sectionId,
+        selectedCategories: Array.from(categoryIds)
+      }
+    })
   }
 
   if (loading && templates.length === 0) {
@@ -410,7 +526,7 @@ const MenuTemplates = () => {
           </div>
           <div className="pagination-controls">
             <div className="items-per-page">
-              <label htmlFor="itemsPerPage">Registros por página:</label>
+              <label htmlFor="itemsPerPage" style={{ marginRight: '8px', fontWeight: '500', color: '#555' }}>Registros por página:</label>
               <select
                 id="itemsPerPage"
                 value={itemsPerPage}
@@ -468,9 +584,8 @@ const MenuTemplates = () => {
                     marginBottom: '24px', 
                     border: '2px solid #e8e8e8', 
                     borderRadius: '12px', 
-                    padding: '20px',
+                    padding: '12px',
                     backgroundColor: '#fafafa',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
                     transition: 'all 0.2s ease',
                   }}
                   onMouseEnter={(e) => {
@@ -482,90 +597,74 @@ const MenuTemplates = () => {
                     e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <div>
-                      <h3 style={{ margin: 0, fontSize: '1.3em', color: '#1a1a1a', fontWeight: '600' }}>{template.name}</h3>
-                      <p style={{ margin: '6px 0 0 0', color: '#666', fontSize: '0.95em' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                      <button
+                        onClick={() => {
+                          setExpandedTemplates(prev => {
+                            const newSet = new Set(prev)
+                            if (newSet.has(template.id)) {
+                              newSet.delete(template.id)
+                            } else {
+                              newSet.add(template.id)
+                            }
+                            return newSet
+                          })
+                        }}
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          border: '2px solid #2196F3',
+                          backgroundColor: 'white',
+                          color: '#2196F3',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          flexShrink: 0
+                        }}
+                        title={expandedTemplates.has(template.id) ? 'Ocultar detalle' : 'Mostrar detalle'}
+                      >
                         <svg 
                           viewBox="0 0 24 24" 
                           fill="none" 
                           stroke="currentColor" 
-                          strokeWidth="2"
-                          style={{ width: '16px', height: '16px', verticalAlign: 'middle', marginRight: '4px' }}
+                          strokeWidth="2.5"
+                          style={{ 
+                            width: '18px', 
+                            height: '18px',
+                            transform: expandedTemplates.has(template.id) ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease'
+                          }}
                         >
-                          <circle cx="9" cy="21" r="1" />
-                          <circle cx="20" cy="21" r="1" />
-                          <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
+                          <polyline points="6 9 12 15 18 9" />
                         </svg>
-                        {template.items?.length || 0} productos en total
-                      </p>
+                      </button>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.2em', color: '#1a1a1a', fontWeight: '600' }}>{template.name}</h3>
+                      </div>
                     </div>
                     <div className="actions-cell" style={{ gap: '8px' }}>
                       <button
-                        className="btn-icon"
-                        onClick={() => handleManageSections(template)}
-                        title="Gestionar Secciones"
-                        style={{ 
-                          backgroundColor: '#FF6B35',
-                          width: '40px',
-                          height: '40px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          border: 'none',
-                          boxShadow: '0 2px 8px rgba(255,107,53,0.3)',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#FF5722'
-                          e.currentTarget.style.transform = 'scale(1.05)'
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(255,107,53,0.5)'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#FF6B35'
-                          e.currentTarget.style.transform = 'scale(1)'
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(255,107,53,0.3)'
-                        }}
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" style={{ width: '20px', height: '20px' }}>
-                          <rect x="3" y="3" width="18" height="5" rx="1" />
-                          <rect x="3" y="10" width="18" height="5" rx="1" />
-                          <rect x="3" y="17" width="18" height="5" rx="1" />
-                        </svg>
-                      </button>
-                      <button
-                        className="btn-icon"
+                        className="btn-icon btn-edit"
                         onClick={() => handleManageItems(template)}
-                        title="Gestionar Productos"
+                        title="Gestionar Contenido"
                         style={{ 
-                          backgroundColor: '#00BCD4',
                           width: '40px',
                           height: '40px',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          border: 'none',
-                          boxShadow: '0 2px 8px rgba(0,188,212,0.3)',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#0097A7'
-                          e.currentTarget.style.transform = 'scale(1.05)'
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,188,212,0.5)'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#00BCD4'
-                          e.currentTarget.style.transform = 'scale(1)'
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,188,212,0.3)'
+                          justifyContent: 'center'
                         }}
                       >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" style={{ width: '20px', height: '20px' }}>
-                          <rect x="3" y="3" width="8" height="8" rx="1" />
-                          <rect x="13" y="3" width="8" height="8" rx="1" />
-                          <rect x="3" y="13" width="8" height="8" rx="1" />
-                          <rect x="13" y="13" width="8" height="8" rx="1" />
+                        <svg xmlns="http://w3.org" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="green" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+                          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
                         </svg>
                       </button>
+
                       <button
                         className="btn-icon btn-edit"
                         onClick={() => handleEdit(template)}
@@ -583,6 +682,7 @@ const MenuTemplates = () => {
                           <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                         </svg>
                       </button>
+
                       <button
                         className="btn-icon btn-deactivate"
                         onClick={() => handleDelete(template.id)}
@@ -603,7 +703,7 @@ const MenuTemplates = () => {
                     </div>
                   </div>
 
-                  {template.items && template.items.length > 0 && (
+                  {expandedTemplates.has(template.id) && template.items && template.items.length > 0 && (
                     <div style={{ marginTop: '16px', backgroundColor: 'white', borderRadius: '8px', padding: '12px' }}>
                       {(() => {
                         // Agrupar items por sección
@@ -626,69 +726,6 @@ const MenuTemplates = () => {
 
                         return (
                           <>
-                            {/* Productos sin sección */}
-                            {itemsWithoutSection.length > 0 && (
-                              <div style={{ 
-                                marginBottom: '24px',
-                                border: '1px dashed #d0d0d0',
-                                borderRadius: '6px',
-                                padding: '12px',
-                                backgroundColor: '#f9f9f9'
-                              }}>
-                                <h4 style={{ 
-                                  margin: '0 0 12px 0', 
-                                  color: '#999', 
-                                  fontSize: '0.9em',
-                                  fontWeight: '500',
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.5px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '6px'
-                                }}>
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '14px', height: '14px' }}>
-                                    <circle cx="12" cy="12" r="1" />
-                                    <circle cx="12" cy="5" r="1" />
-                                    <circle cx="12" cy="19" r="1" />
-                                  </svg>
-                                  Sin sección
-                                </h4>
-                                <table className="users-table">
-                                  <thead>
-                                    <tr>
-                                      <th>Producto</th>
-                                      <th>Precio Base</th>
-                                      <th>Precio Personalizado</th>
-                                      <th>Precio Final</th>
-                                      <th>Acciones</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {itemsWithoutSection.map(item => (
-                                      <tr key={item.id}>
-                                        <td>{item.productName}</td>
-                                        <td>S/ {item.productPrice.toFixed(2)}</td>
-                                        <td>{item.priceOverride ? `S/ ${item.priceOverride.toFixed(2)}` : '-'}</td>
-                                        <td><strong>S/ {item.effectivePrice.toFixed(2)}</strong></td>
-                                        <td className="actions-cell">
-                                          <button
-                                            className="btn-icon btn-deactivate"
-                                            onClick={() => handleRemoveItem(template.id, item.id)}
-                                            title="Eliminar"
-                                          >
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                              <line x1="18" y1="6" x2="6" y2="18" />
-                                              <line x1="6" y1="6" x2="18" y2="18" />
-                                            </svg>
-                                          </button>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            )}
-
                             {/* Productos por sección */}
                             {Object.values(itemsBySection).map((section, idx) => (
                               <div key={idx} style={{ 
@@ -717,34 +754,11 @@ const MenuTemplates = () => {
                                   {section.name}
                                 </h4>
                                 <table className="users-table">
-                                  <thead>
-                                    <tr>
-                                      <th>Producto</th>
-                                      <th>Precio Base</th>
-                                      <th>Precio Personalizado</th>
-                                      <th>Precio Final</th>
-                                      <th>Acciones</th>
-                                    </tr>
-                                  </thead>
                                   <tbody>
                                     {section.items.map(item => (
                                       <tr key={item.id}>
                                         <td>{item.productName}</td>
                                         <td>S/ {item.productPrice.toFixed(2)}</td>
-                                        <td>{item.priceOverride ? `S/ ${item.priceOverride.toFixed(2)}` : '-'}</td>
-                                        <td><strong>S/ {item.effectivePrice.toFixed(2)}</strong></td>
-                                        <td className="actions-cell">
-                                          <button
-                                            className="btn-icon btn-deactivate"
-                                            onClick={() => handleRemoveItem(template.id, item.id)}
-                                            title="Eliminar"
-                                          >
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                              <line x1="18" y1="6" x2="6" y2="18" />
-                                              <line x1="6" y1="6" x2="18" y2="18" />
-                                            </svg>
-                                          </button>
-                                        </td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -833,119 +847,296 @@ const MenuTemplates = () => {
           </div>
         )}
 
-        {/* Modal Agregar Productos */}
+        {/* Modal Gestionar Contenido (Secciones y Productos) */}
         {showItemsModal && (
           <div className="modal-overlay" onClick={() => !submitting && setShowItemsModal(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px', maxHeight: '80vh', overflow: 'auto' }}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', maxHeight: '90vh' }}>
               <div className="modal-header">
-                <h2>Agregar Productos a {selectedTemplate?.name}</h2>
-                <button 
-                  className="modal-close" 
-                  onClick={() => setShowItemsModal(false)}
-                  disabled={submitting}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
+                <h2>Gestionar contenido - {selectedTemplate?.name}</h2>
               </div>
 
-              <form className="modal-form" onSubmit={handleAddItems}>
-                <div className="form-group">
-                  <label htmlFor="sectionSelect">Sección (opcional)</label>
-                  <select
-                    id="sectionSelect"
-                    className="input"
-                    value={itemsFormData.sectionId || ''}
-                    onChange={(e) => setItemsFormData(prev => ({ ...prev, sectionId: e.target.value || null }))}
-                    disabled={submitting}
-                  >
-                    <option value="">Sin sección</option>
-                    {sections.map(section => (
-                      <option key={section.id} value={section.id}>
-                        {section.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div style={{ display: 'flex', gap: '16px', height: 'calc(90vh - 150px)' }}>
+                {/* Panel izquierdo: Secciones */}
+                <div style={{ 
+                  width: '250px', 
+                  borderRight: '2px solid #e8e8e8',
+                  paddingRight: '16px',
+                  overflowY: 'auto'
+                }}>
+                  <div style={{ padding: '12px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1em' }}>Secciones</h3>
+                    <button 
+                      className="btn-icon btn-edit"
+                      onClick={handleCreateSection}
+                      title="Nueva Sección"
+                      style={{ 
+                        backgroundColor: '#4CAF50',
+                        width: '40px',
+                        height: '40px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" style={{ width: '16px', height: '16px' }}>
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                      </svg>
+                    </button>
+                  </div>
 
-                <div className="info-message">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="16" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                  </svg>
-                  <span>Puedes personalizar el precio de cada producto (opcional)</span>
-                </div>
-
-                <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                  {products.map(product => (
-                    <div key={product.id} style={{ 
-                      padding: '12px', 
-                      border: '1px solid #ddd', 
-                      borderRadius: '6px', 
-                      marginBottom: '8px',
-                      backgroundColor: itemsFormData.selectedProducts.includes(product.id) ? '#f0f7ff' : 'white'
-                    }}>
-                      <label style={{ display: 'flex', alignItems: 'flex-start', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={itemsFormData.selectedProducts.includes(product.id)}
-                          onChange={() => handleProductToggle(product.id)}
-                          disabled={submitting}
-                          style={{ marginRight: '12px', marginTop: '4px' }}
-                        />
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: '500', marginBottom: '4px' }}>
-                            {product.name}
-                          </div>
-                          <div style={{ fontSize: '0.9em', color: '#666', marginBottom: '8px' }}>
-                            Precio base: S/ {product.price.toFixed(2)}
-                          </div>
-                          {itemsFormData.selectedProducts.includes(product.id) && (
-                            <div style={{ marginTop: '8px' }}>
-                              <label style={{ fontSize: '0.9em', display: 'block', marginBottom: '4px' }}>
-                                Precio personalizado (opcional):
-                              </label>
-                              <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                className="input"
-                                placeholder={product.price.toFixed(2)}
-                                value={itemsFormData.priceOverrides[product.id] || ''}
-                                onChange={(e) => handlePriceOverride(product.id, e.target.value)}
-                                disabled={submitting}
-                                style={{ width: '150px' }}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </label>
+                  {/* Lista de secciones */}
+                  {sections.length === 0 ? (
+                    <div style={{ padding: '20px', textAlign: 'center', color: '#999', backgroundColor: '#f9f9f9', borderRadius: '6px' }}>
+                      <p style={{ margin: '0', fontSize: '0.9em' }}>No hay secciones creadas</p>
+                      <p style={{ margin: '8px 0 0 0', fontSize: '0.85em' }}>Crea al menos una sección para agregar productos</p>
                     </div>
-                  ))}
+                  ) : (
+                    sections.map(section => (
+                    <div 
+                      key={section.id}
+                      onClick={() => handleSectionChange(section.id)}
+                      style={{
+                        padding: '12px',
+                        marginBottom: '8px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        backgroundColor: itemsFormData.currentSectionId === section.id ? '#e3f2fd' : 'white',
+                        border: itemsFormData.currentSectionId === section.id ? '2px solid #2196F3' : '1px solid #ddd',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (itemsFormData.currentSectionId !== section.id) {
+                          e.currentTarget.style.backgroundColor = '#f5f5f5'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (itemsFormData.currentSectionId !== section.id) {
+                          e.currentTarget.style.backgroundColor = 'white'
+                        }
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: '600', marginBottom: '4px', fontSize: '0.95em' }}>
+                            {section.name}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex' }}>
+                          <button
+                            className="btn-icon btn-edit"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEditSection(section)
+                            }}
+                            title="Editar"
+                            style={{ 
+                              width: '40px',
+                              height: '40px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
+                              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          </button>
+                          <button
+                            className="btn-icon btn-deactivate"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteSection(section.id)
+                            }}
+                            title="Eliminar"
+                            style={{ 
+                              width: '40px',
+                              height: '40px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                  )}
                 </div>
 
-                <div className="modal-actions" style={{ marginTop: '16px' }}>
-                  <button 
-                    type="button" 
-                    className="btn btn-cancel" 
-                    onClick={() => setShowItemsModal(false)}
-                    disabled={submitting}
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="btn btn-primary"
-                    disabled={submitting}
-                  >
-                    {submitting ? 'Agregando...' : 'Agregar Productos'}
-                  </button>
+                {/* Panel derecho: Productos */}
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                  <form className="modal-form" onSubmit={handleAddItems} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+
+                    {/* Filtro de categorías */}
+                    <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '6px' }}>
+                      <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '0.95em' }}>
+                        Categorías de productos
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {categories.map(category => (
+                          <label 
+                            key={category.id}
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center',
+                              padding: '6px 12px',
+                              backgroundColor: itemsFormData.selectedCategories.includes(category.id) ? '#2196F3' : '#f5f5f5',
+                              color: itemsFormData.selectedCategories.includes(category.id) ? 'white' : '#333',
+                              borderRadius: '16px',
+                              cursor: 'pointer',
+                              fontSize: '0.9em',
+                              fontWeight: '500',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={itemsFormData.selectedCategories.includes(category.id)}
+                              onChange={() => handleCategoryToggle(category.id)}
+                              style={{ marginRight: '6px' }}
+                            />
+                            {category.name}
+                          </label>
+                        ))}
+                      </div>
+                      {itemsFormData.selectedCategories.length === 0 && (
+                        <div style={{ marginTop: '8px', fontSize: '0.85em', color: '#999', fontStyle: 'italic' }}>
+                          Selecciona al menos una categoría para ver productos
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ flex: 1, overflowY: 'auto', marginBottom: '16px' }}>
+                      {!itemsFormData.currentSectionId ? (
+                        <div style={{ 
+                          padding: '60px 20px', 
+                          textAlign: 'center', 
+                          color: '#999',
+                          backgroundColor: '#f9f9f9',
+                          borderRadius: '6px',
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '64px', height: '64px', margin: '0 auto 16px', opacity: 0.3 }}>
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                          </svg>
+                          <p style={{ margin: '0', fontWeight: '600', fontSize: '1.1em', color: '#666' }}>Selecciona una sección</p>
+                          <p style={{ margin: '8px 0 0 0', fontSize: '0.9em' }}>
+                            Elige una sección del panel izquierdo para comenzar a agregar productos
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          {itemsFormData.selectedCategories.length === 0 ? (
+                            <div style={{ 
+                              padding: '40px 20px', 
+                              textAlign: 'center', 
+                              color: '#999',
+                              backgroundColor: '#f9f9f9',
+                              borderRadius: '6px'
+                            }}>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '48px', height: '48px', margin: '0 auto 12px' }}>
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                              </svg>
+                              <p style={{ margin: '0', fontWeight: '500' }}>Selecciona categorías arriba</p>
+                              <p style={{ margin: '8px 0 0 0', fontSize: '0.9em' }}>
+                                Primero elige las categorías de productos que deseas ver
+                              </p>
+                            </div>
+                          ) : products.filter(p => p.categoryId && itemsFormData.selectedCategories.includes(p.categoryId)).length === 0 ? (
+                            <div style={{ 
+                              padding: '40px 20px', 
+                              textAlign: 'center', 
+                              color: '#999',
+                              backgroundColor: '#f9f9f9',
+                              borderRadius: '6px'
+                            }}>
+                              <p style={{ margin: '0' }}>No hay productos disponibles en las categorías seleccionadas</p>
+                            </div>
+                          ) : (
+                            products.filter(p => p.categoryId && itemsFormData.selectedCategories.includes(p.categoryId)).map(product => {
+                              const sectionKey = String(itemsFormData.currentSectionId)
+                              const isSelected = (itemsFormData.productsBySection[sectionKey] || []).includes(product.id)
+                              
+                              return (
+                                <div key={product.id} style={{ 
+                                  padding: '12px', 
+                                  border: '1px solid #ddd', 
+                                  borderRadius: '6px', 
+                                  marginBottom: '8px',
+                                  backgroundColor: isSelected ? '#f0f7ff' : 'white',
+                                  borderColor: isSelected ? '#2196F3' : '#ddd'
+                                }}>
+                                  <label style={{ display: 'flex', alignItems: 'flex-start', cursor: 'pointer' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => handleProductToggle(product.id)}
+                                      disabled={submitting}
+                                      style={{ marginRight: '12px', marginTop: '4px' }}
+                                    />
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+                                        {product.name}
+                                      </div>
+                                      <div style={{ fontSize: '0.9em', color: '#666' }}>
+                                        Precio: S/ {(product.basePrice || product.price || 0).toFixed(2)}
+                                      </div>
+                                    </div>
+                                  </label>
+                                </div>
+                              )
+                            })
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    <div className="modal-actions">
+                      <button 
+                        type="button" 
+                        className="btn btn-cancel" 
+                        onClick={() => setShowItemsModal(false)}
+                        disabled={submitting}
+                      >
+                        Cerrar
+                      </button>
+                      <button 
+                        type="submit" 
+                        className="btn btn-primary"
+                        disabled={submitting || Object.keys(itemsFormData.productsBySection).length === 0}
+                      >
+                        {submitting ? 'Guardando...' : (() => {
+                          const totalProducts = Object.values(itemsFormData.productsBySection).reduce(
+                            (sum, products) => sum + products.length, 
+                            0
+                          )
+                          
+                          // Si tiene items existentes, mostrar "Guardar cambios"
+                          if (itemsFormData.hasExistingItems) {
+                            return 'Guardar cambios'
+                          }
+                          
+                          // Si no, mostrar contador de productos
+                          return totalProducts > 0 
+                            ? `Agregar ${totalProducts} Producto${totalProducts > 1 ? 's' : ''}` 
+                            : 'Agregar Productos'
+                        })()}
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              </form>
+              </div>
             </div>
           </div>
         )}
@@ -1006,28 +1197,6 @@ const MenuTemplates = () => {
                           <div style={{ fontSize: '0.85em', color: '#666', marginTop: '4px' }}>
                             Orden: {section.displayOrder} • {section.visible ? 'Visible' : 'Oculta'}
                           </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button
-                            className="btn-icon btn-edit"
-                            onClick={() => handleEditSection(section)}
-                            title="Editar"
-                          >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            </svg>
-                          </button>
-                          <button
-                            className="btn-icon btn-deactivate"
-                            onClick={() => handleDeleteSection(section.id)}
-                            title="Eliminar"
-                          >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <line x1="18" y1="6" x2="6" y2="18" />
-                              <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                          </button>
                         </div>
                       </div>
                     ))}

@@ -209,23 +209,29 @@ const Tables = () => {
           </button>
         </div>
 
-        <div className="users-filters">
-          <div className="search-box">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Buscar por número de mesa..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+        <div className="users-filters card">
+          <div className="filter-group">
+            <label htmlFor="table-search">Buscar:</label>
+            <div className="search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+              <input
+                id="table-search"
+                className="table-search-input"
+                type="text"
+                placeholder="Buscar por número de mesa..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="filter-group">
-            <label>Estado:</label>
+            <label htmlFor="table-status">Estado:</label>
             <select
+              id="table-status"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
@@ -296,17 +302,6 @@ const Tables = () => {
                                 </svg>
                               </button>
                             )}
-                            <select
-                              value={table.status}
-                              onChange={(e) => handleChangeStatus(table.id, e.target.value)}
-                              className="status-select-inline"
-                              title="Cambiar estado"
-                            >
-                              <option value="AVAILABLE">Disponible</option>
-                              <option value="OCCUPIED">Ocupada</option>
-                              <option value="RESERVED">Reservada</option>
-                              <option value="OUT_OF_SERVICE">Fuera de servicio</option>
-                            </select>
                           </div>
                         </td>
                       </tr>

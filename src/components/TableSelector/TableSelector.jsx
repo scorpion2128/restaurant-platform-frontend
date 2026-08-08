@@ -382,55 +382,54 @@ const TableSelector = ({ onTableSelected }) => {
           return (
             <div
               key={table.id}
-              className={`table-card ${getTableStatusClass(table.status)} ${
-                (table.status === 'AVAILABLE' || table.status === 'OCCUPIED') ? 'clickable' : ''
+              className={`table-card ${
+                (table.status === 'AVAILABLE' || table.status === 'OCCUPIED') ? 'clickable' : 'not-clickable'
               }`}
               onClick={() => handleTableClick(table)}
             >
-              <div className="table-circle">
+              {/* Círculo principal de la mesa */}
+              <div className={`table-circle ${getTableStatusClass(table.status)}`}>
                 <div className="table-number">{table.number}</div>
                 
-                {/* Indicador de órdenes en mesas ocupadas */}
+                {/* Indicador de órdenes en la esquina superior derecha */}
                 {hasOrders && table.status === 'OCCUPIED' && (
                   <div className={`order-indicator ${getOrderIndicatorClass(table.id)}`}>
-                    <span className="pulse-dot"></span>
                   </div>
                 )}
               </div>
               
+              {/* Badge de estado debajo del círculo */}
               <div className={`table-status-badge ${getTableStatusClass(table.status)}`}>
                 {getTableStatusText(table.status)}
               </div>
               
-              {/* Badge de contador de órdenes - espacio reservado para alineación */}
-              <div style={{ minHeight: '2.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {hasOrders && table.status === 'OCCUPIED' && (
-                  <div className="orders-count-badge">
-                    <div className="badge-line-1">
-                      {tableOrders.length} orden{tableOrders.length > 1 ? 'es' : ''} • S/{getTableTotal(table.id).toFixed(2)}
-                    </div>
-                    <div className="badge-line-2">
-                      {hasOrdersRequiringTime(table.id) ? (
-                        <>
-                          <span className="status-label">{getStatusLabelShort(getOldestOrderStatus(table.id))}</span>
-                          {' • '}
-                          <span className={`time-elapsed ${getTimeAlertClass(getOldestOrderTime(table.id))}`}>
-                            hace {formatTimeCompact(getOldestOrderTime(table.id))}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="status-label">Entregado</span>
-                          {' • '}
-                          <span className="time-elapsed time-delivered">
-                            hace {formatTimeCompact(getOldestDeliveredOrderTime(table.id))}
-                          </span>
-                        </>
-                      )}
-                    </div>
+              {/* Información de órdenes */}
+              {hasOrders && table.status === 'OCCUPIED' && (
+                <div className="orders-info">
+                  <div className="orders-summary">
+                    {tableOrders.length} orden{tableOrders.length > 1 ? 'es' : ''} • S/{getTableTotal(table.id).toFixed(2)}
                   </div>
-                )}
-              </div>
+                  <div className="orders-status">
+                    {hasOrdersRequiringTime(table.id) ? (
+                      <>
+                        {getReadyOrdersCount(table.id) > 0 && (
+                          <span className="ready-count">{getReadyOrdersCount(table.id)} listo</span>
+                        )}
+                        {getReadyOrdersCount(table.id) > 0 && getOldestOrderTime(table.id) !== null && ' • '}
+                        {getOldestOrderTime(table.id) !== null && (
+                          <span className={`time-elapsed ${getTimeAlertClass(getOldestOrderTime(table.id))}`}>
+                            {formatTimeCompact(getOldestOrderTime(table.id))}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <span className="status-delivered">🥘 Entregado</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
