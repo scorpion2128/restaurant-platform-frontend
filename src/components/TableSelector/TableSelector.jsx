@@ -10,7 +10,6 @@ const TableSelector = ({ onTableSelected }) => {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   const [showOrdersPanel, setShowOrdersPanel] = useState(false);
-  const [orderFilter, setOrderFilter] = useState('all');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const prevReadyOrdersRef = useRef([]);
 
@@ -230,30 +229,24 @@ const TableSelector = ({ onTableSelected }) => {
     return 'order-indicator-pending';
   };
 
-  // Contadores por estado
-  const orderCounts = {
-    pending: activeOrders.filter(o => o.status === 'PENDING').length,
-    inPreparation: activeOrders.filter(o => o.status === 'IN_PREPARATION').length,
-    ready: activeOrders.filter(o => o.status === 'READY').length,
-    delivered: activeOrders.filter(o => o.status === 'DELIVERED').length,
-    total: activeOrders.length
-  };
-
-  // Filtrar órdenes según el filtro seleccionado
-  const getFilteredOrders = () => {
-    switch (orderFilter) {
-      case 'pending':
-        return activeOrders.filter(o => o.status === 'PENDING');
-      case 'preparation':
-        return activeOrders.filter(o => o.status === 'IN_PREPARATION');
-      case 'ready':
-        return activeOrders.filter(o => o.status === 'READY');
-      case 'delivered':
-        return activeOrders.filter(o => o.status === 'DELIVERED');
-      default:
-        return activeOrders;
+  const orderColumns = [
+    {
+      key: 'pending',
+      title: 'Pendientes',
+      orders: activeOrders.filter(order => order.status === 'PENDING')
+    },
+    {
+      key: 'preparation',
+      title: 'En Preparación',
+      orders: activeOrders.filter(order => order.status === 'IN_PREPARATION')
+    },
+    {
+      key: 'ready',
+      title: 'Para entregar',
+      orders: activeOrders.filter(order => order.status === 'READY')
     }
-  };
+  ];
+  const trackedOrdersCount = orderColumns.reduce((total, column) => total + column.orders.length, 0);
 
   // Traducir estado de orden
   const translateOrderStatus = (status) => {
@@ -369,8 +362,6 @@ const TableSelector = ({ onTableSelected }) => {
     );
   }
 
-  const filteredOrders = getFilteredOrders();
-
   return (
     <div className="table-selector">
       <div className="table-selector-header"></div>
@@ -436,47 +427,18 @@ const TableSelector = ({ onTableSelected }) => {
       </div>
 
       {/* Panel de Órdenes Activas - Rediseñado Grande */}
-      {orderCounts.total > 0 && (
+      {trackedOrdersCount > 0 && (
         <div className="orders-section-large">
           <div className="orders-section-header">
-            <div className="header-title">
-              <h3>📋 Seguimiento de pedidos</h3>
+            <div className="orders-header-title">
+              <div className="orders-title-icon" aria-hidden="true">📋</div>
+              <div>
+                <h3>Seguimiento de pedidos</h3>
+                <p>{trackedOrdersCount} pedido{trackedOrdersCount !== 1 ? 's' : ''} en seguimiento</p>
+              </div>
             </div>
             
             <div className="header-controls">
-              <div className="filter-group">
-                <button 
-                  className={`filter-btn ${orderFilter === 'all' ? 'active' : ''}`}
-                  onClick={() => setOrderFilter('all')}
-                >
-                  Todas
-                </button>
-                <button 
-                  className={`filter-btn ${orderFilter === 'ready' ? 'active' : ''}`}
-                  onClick={() => setOrderFilter('ready')}
-                >
-                  Listas
-                </button>
-                <button 
-                  className={`filter-btn ${orderFilter === 'preparation' ? 'active' : ''}`}
-                  onClick={() => setOrderFilter('preparation')}
-                >
-                  En Cocina
-                </button>
-                <button 
-                  className={`filter-btn ${orderFilter === 'pending' ? 'active' : ''}`}
-                  onClick={() => setOrderFilter('pending')}
-                >
-                  Pendientes
-                </button>
-                <button 
-                  className={`filter-btn ${orderFilter === 'delivered' ? 'active' : ''}`}
-                  onClick={() => setOrderFilter('delivered')}
-                >
-                  Entregados
-                </button>
-              </div>
-              
               <button 
                 className="sound-toggle-btn"
                 onClick={() => setSoundEnabled(!soundEnabled)}
@@ -487,11 +449,23 @@ const TableSelector = ({ onTableSelected }) => {
             </div>
           </div>
           
-          <div className="orders-grid-large">
-            {filteredOrders.length > 0 ? (
-              filteredOrders.map(order => {
-                const table = tables.find(t => t.id === order.tableId);
-                return (
+          <div className="orders-board">
+            {orderColumns.map(column => (
+              <section key={column.key} className={`orders-board-column column-${column.key}`}>
+                <div className="orders-column-header">
+                  <div className="orders-column-title">
+                    <span className="orders-column-indicator" aria-hidden="true" />
+                    <h4>{column.title}</h4>
+                  </div>
+                  <span className="orders-column-count" aria-label={`${column.orders.length} pedidos`}>
+                    {column.orders.length}
+                  </span>
+                </div>
+
+                <div className="orders-column-list">
+                  {column.orders.length > 0 ? column.orders.map(order => {
+                    const table = tables.find(t => t.id === order.tableId);
+                    return (
                   <div 
                     key={order.id} 
                     className={`order-card-large status-${order.status.toLowerCase()}`}
@@ -500,13 +474,13 @@ const TableSelector = ({ onTableSelected }) => {
                     <div className="order-card-header">
                       <div className="mesa-info">
                         <div className="mesa-number">Mesa {table?.number || '-'}</div>
+                        <div className="order-reference">{order.orderNumber}</div>
                       </div>
                       <div className={`status-tag ${order.status.toLowerCase()}`}>
                         <div className="status-main">
                           {order.status === 'PENDING' && '⏳ Pendiente'}
-                          {order.status === 'IN_PREPARATION' && '🍳 En Cocina'}
-                          {order.status === 'READY' && '✅ Listo'}
-                          {order.status === 'DELIVERED' && '📦 Entregado'}
+                          {order.status === 'IN_PREPARATION' && '🍳 En Preparación'}
+                          {order.status === 'READY' && '✅ Para entregar'}
                         </div>
                         <div className="status-time">
                           {getTimeAgo(order.createdAt)}
@@ -547,19 +521,18 @@ const TableSelector = ({ onTableSelected }) => {
                           className="btn-mark-delivered"
                           onClick={(e) => handleMarkAsDelivered(order.id, e)}
                         >
-                          📦 Marcar como Entregado
+                          Entregado
                         </button>
                       )}
                     </div>
                   </div>
-                );
-              })
-            ) : (
-              <div className="no-orders-large">
-                <div className="no-orders-icon">📋</div>
-                <p>No hay órdenes {orderFilter !== 'all' ? 'con este filtro' : 'activas'}</p>
-              </div>
-            )}
+                    );
+                  }) : (
+                    <div className="orders-column-empty">Sin pedidos</div>
+                  )}
+                </div>
+              </section>
+            ))}
           </div>
         </div>
       )}

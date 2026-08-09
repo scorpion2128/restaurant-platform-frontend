@@ -1,67 +1,58 @@
 import { useState, useEffect } from 'react';
 import { orderService } from '../services/orderService';
 import dailyMenuService from '../services/dailyMenuService';
-import menuTemplateService from '../services/menuTemplateService';
 import Toast from '../components/Toast/Toast';
 import Layout from '../components/Layout/Layout';
 import TableSelector from '../components/TableSelector/TableSelector';
+import PaymentModal from '../components/Payment/PaymentModal';
 import './OrderTaking.css';
 
 const OrderTaking = () => {
   const [selectedTable, setSelectedTable] = useState(null);
   const [menus, setMenus] = useState([]);
-  const [menuTemplate, setMenuTemplate] = useState(null);
   const [cart, setCart] = useState([]);
   const [activeOrders, setActiveOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   const [showMenuModal, setShowMenuModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [menuCombo, setMenuCombo] = useState({ entrada: null, plato: null, bebida: null });
   const [currentItemNotes, setCurrentItemNotes] = useState('');
   const [nextMenuGroupId, setNextMenuGroupId] = useState(1);
-  const [useDailyMenu, setUseDailyMenu] = useState(true);
 
   useEffect(() => {
     if (selectedTable) {
       loadTodayMenu();
-      loadActiveOrders();
+      loadTableOrders(selectedTable.id);
     }
   }, [selectedTable]);
 
   const loadTodayMenu = async () => {
     try {
-      const response = await dailyMenuService.getActiveMenu();
+      const today = new Date();
+      const localDate = [
+        today.getFullYear(),
+        String(today.getMonth() + 1).padStart(2, '0'),
+        String(today.getDate()).padStart(2, '0')
+      ].join('-');
+      const response = await dailyMenuService.getMenuByDate(localDate);
+
       if (response.success && response.data) {
         setMenus([response.data]);
-        setUseDailyMenu(true);
       } else {
-        // Si no hay menú del día, cargar menu template (carta)
-        setUseDailyMenu(false);
-        await loadMenuTemplate();
+        setMenus([]);
       }
     } catch (error) {
-      // Si hay error, cargar menu template
-      setUseDailyMenu(false);
-      await loadMenuTemplate();
+      setMenus([]);
+      showToast(error.message || 'No hay un menú configurado para hoy', 'error');
     }
   };
 
-  const loadMenuTemplate = async () => {
-    try {
-      const response = await menuTemplateService.getTemplates();
-      if (response.success && response.data && response.data.content && response.data.content.length > 0) {
-        // Obtener el primer template (la carta del restaurante)
-        const firstTemplate = response.data.content[0];
-        setMenuTemplate(firstTemplate);
-      }
-    } catch (error) {
-      showToast('Error al cargar la carta', 'error');
-    }
-  };
+  const loadTableOrders = async (tableId = selectedTable?.id) => {
+    if (!tableId) return;
 
-  const loadActiveOrders = async () => {
     try {
-      const response = await orderService.getActiveOrdersByWaiter();
+      const response = await orderService.getActiveOrdersByTable(tableId);
       if (response.success) {
         setActiveOrders(response.data || []);
       }
@@ -77,7 +68,7 @@ const OrderTaking = () => {
   const handleAddToCart = (item, sectionName) => {
     // Buscar si ya existe el item en el carrito
     const existingIndex = cart.findIndex(
-      cartItem => cartItem.productId === item.masterProductId && !cartItem.isPartOfMenu
+      cartItem => cartItem.productId === item.productId && !cartItem.isPartOfMenu
     );
 
     if (existingIndex >= 0) {
@@ -88,7 +79,7 @@ const OrderTaking = () => {
     } else {
       // Agregar nuevo item
       const newItem = {
-        productId: item.masterProductId,
+        productId: item.productId,
         productName: item.productName,
         quantity: 1,
         unitPrice: item.productPrice,
@@ -116,8 +107,8 @@ const OrderTaking = () => {
 
     const menuItems = [
       {
-        productId: entrada.product.id,
-        productName: entrada.product.name,
+        productId: entrada.productId,
+        productName: entrada.productName,
         quantity: 1,
         unitPrice: parseFloat(pricePerItem),
         notes: '',
@@ -126,8 +117,8 @@ const OrderTaking = () => {
         sectionName: 'ENTRADA'
       },
       {
-        productId: plato.product.id,
-        productName: plato.product.name,
+        productId: plato.productId,
+        productName: plato.productName,
         quantity: 1,
         unitPrice: parseFloat(pricePerItem),
         notes: '',
@@ -136,8 +127,8 @@ const OrderTaking = () => {
         sectionName: 'PLATO DE FONDO'
       },
       {
-        productId: bebida.product.id,
-        productName: bebida.product.name,
+        productId: bebida.productId,
+        productName: bebida.productName,
         quantity: 1,
         unitPrice: parseFloat(pricePerItem),
         notes: '',
@@ -242,7 +233,7 @@ const OrderTaking = () => {
         setCart([]);
         setSelectedTable(null);
         setNextMenuGroupId(1);
-        loadActiveOrders();
+        loadTableOrders(selectedTable.id);
       }
     } catch (error) {
       showToast(error.response?.data?.message || 'Error al crear el pedido', 'error');
@@ -254,19 +245,7 @@ const OrderTaking = () => {
   const getMenuItemsBySection = (menu) => {
     const sections = {};
     menu.items.forEach(item => {
-      const sectionName = item.section?.name || 'Sin sección';
-      if (!sections[sectionName]) {
-        sections[sectionName] = [];
-      }
-      sections[sectionName].push(item);
-    });
-    return sections;
-  };
-
-  const getTemplateItemsBySection = (template) => {
-    const sections = {};
-    template.items.forEach(item => {
-      const sectionName = item.sectionName || 'Carta General';
+      const sectionName = item.sectionName || 'Sin sección';
       if (!sections[sectionName]) {
         sections[sectionName] = [];
       }
@@ -278,7 +257,10 @@ const OrderTaking = () => {
   const getItemsBySection = (sectionName) => {
     if (menus.length === 0) return [];
     const sections = getMenuItemsBySection(menus[0]);
-    return sections[sectionName] || [];
+    const matchingSection = Object.keys(sections).find(
+      name => name.toUpperCase() === sectionName.toUpperCase()
+    );
+    return matchingSection ? sections[matchingSection] : [];
   };
 
   const groupCartItemsByMenu = () => {
@@ -294,6 +276,21 @@ const OrderTaking = () => {
       }
     });
     return grouped;
+  };
+
+  const hasDeliveredOrders = activeOrders.some(order => order.status === 'DELIVERED');
+
+  const getOrderStatusLabel = (status) => ({
+    PENDING: 'Pendiente',
+    IN_PREPARATION: 'En preparación',
+    READY: 'Para entregar',
+    DELIVERED: 'Entregado'
+  }[status] || status);
+
+  const handlePaymentComplete = () => {
+    setShowPaymentModal(false);
+    setCart([]);
+    setSelectedTable(null);
   };
 
   // Si no hay mesa seleccionada, mostrar selector de mesas
@@ -319,13 +316,17 @@ const OrderTaking = () => {
         <div className="order-taking-header">
           <div className="header-left">
             <button className="btn-back" onClick={handleBackToTableSelection}>
-              ← Volver a mesas
+              <span className="btn-back-icon" aria-hidden="true">←</span>
+              <span>Mesas</span>
             </button>
             <h2>Tomar Pedido - Mesa {selectedTable.number}</h2>
           </div>
-          <div className="table-info">
-            <span className="table-badge">Mesa {selectedTable.number}</span>
-            <span className="capacity-badge">👤 {selectedTable.capacity}</span>
+          <div className="header-right">
+            {hasDeliveredOrders && (
+              <button className="btn-view-account" onClick={() => setShowPaymentModal(true)}>
+                💳 Ver cuenta / Pagar
+              </button>
+            )}
           </div>
         </div>
 
@@ -333,8 +334,8 @@ const OrderTaking = () => {
         {/* Menú del día o Carta */}
         <div className="menu-section">
           <div className="menu-header">
-            <h3>{useDailyMenu ? 'Menú del Día' : 'Carta'}</h3>
-            {useDailyMenu && (
+            <h3>Menú del Día</h3>
+            {menus.length > 0 && (
               <button
                 className="btn-create-menu"
                 onClick={() => setShowMenuModal(true)}
@@ -344,7 +345,7 @@ const OrderTaking = () => {
             )}
           </div>
 
-          {useDailyMenu && menus.length > 0 ? (
+          {menus.length > 0 ? (
             <div className="menu-sections">
               {Object.entries(getMenuItemsBySection(menus[0])).map(([sectionName, items]) => (
                 <div key={sectionName} className="section-group">
@@ -372,34 +373,8 @@ const OrderTaking = () => {
                 </div>
               ))}
             </div>
-          ) : !useDailyMenu && menuTemplate && menuTemplate.items && menuTemplate.items.length > 0 ? (
-            <div className="menu-sections">
-              {Object.entries(getTemplateItemsBySection(menuTemplate)).map(([sectionName, items]) => (
-                <div key={sectionName} className="section-group">
-                  <h4 className="section-title">{sectionName}</h4>
-                  <div className="items-list">
-                    {items.map((item) => (
-                      <div key={item.id} className="menu-item-card">
-                        <div className="item-info">
-                          <span className="item-name">{item.productName}</span>
-                          <span className="item-price">
-                            S/ {item.productPrice.toFixed(2)}
-                          </span>
-                        </div>
-                        <button
-                          className="btn-add"
-                          onClick={() => handleAddToCart(item, sectionName)}
-                        >
-                          +
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
           ) : (
-            <p className="no-data">No hay menú disponible</p>
+            <p className="no-data">No hay un menú configurado para hoy</p>
           )}
         </div>
 
@@ -420,19 +395,22 @@ const OrderTaking = () => {
                       )}
                       {items.map((item) => (
                         <div key={item.index} className="cart-item">
-                          <div className="item-details">
+                          <div className="cart-item-main">
                             <span className="item-name-cart">
                               {item.productName}
                               {item.notes && <span className="has-notes"> ⚠️</span>}
                             </span>
-                            <div className="quantity-controls">
-                              <button onClick={() => updateCartItemQuantity(item.index, -1)}>-</button>
-                              <span>{item.quantity}</span>
-                              <button onClick={() => updateCartItemQuantity(item.index, 1)}>+</button>
-                            </div>
                             <span className="item-subtotal">
                               S/ {(item.unitPrice * item.quantity).toFixed(2)}
                             </span>
+                          </div>
+                          <div className="cart-item-actions">
+                            <span className="quantity-label">Cantidad</span>
+                            <div className="quantity-controls">
+                              <button onClick={() => updateCartItemQuantity(item.index, -1)} aria-label={`Disminuir cantidad de ${item.productName}`}>−</button>
+                              <span aria-live="polite">{item.quantity}</span>
+                              <button onClick={() => updateCartItemQuantity(item.index, 1)} aria-label={`Aumentar cantidad de ${item.productName}`}>+</button>
+                            </div>
                           </div>
                           {!isMenu && (
                             <button
@@ -477,7 +455,7 @@ const OrderTaking = () => {
 
           {/* Pedidos activos */}
           <div className="active-orders-section">
-            <h3>Mis Pedidos Activos</h3>
+            <h3>Pedidos de esta mesa</h3>
             {activeOrders.length > 0 ? (
               <div className="active-orders-list">
                 {activeOrders.map((order) => (
@@ -485,12 +463,27 @@ const OrderTaking = () => {
                     <div className="order-header-card">
                       <span className="order-number">{order.orderNumber}</span>
                       <span className={`order-status status-${order.status.toLowerCase()}`}>
-                        {order.status}
+                        {getOrderStatusLabel(order.status)}
                       </span>
                     </div>
+                    {order.items?.length > 0 && (
+                      <div className="active-order-items">
+                        {order.items.slice(0, 4).map((item, index) => (
+                          <div className="active-order-item" key={item.id || `${order.id}-${index}`}>
+                            <span className="active-order-quantity">{item.quantity || 1}x</span>
+                            <span className="active-order-item-name">
+                              {item.productName || item.menuItemName || 'Producto'}
+                            </span>
+                          </div>
+                        ))}
+                        {order.items.length > 4 && (
+                          <span className="active-order-more">+{order.items.length - 4} producto{order.items.length - 4 !== 1 ? 's' : ''} más</span>
+                        )}
+                      </div>
+                    )}
                     <div className="order-info">
-                      <span>Mesa: {order.tableNumber}</span>
-                      <span>Total: S/ {order.totalAmount.toFixed(2)}</span>
+                      <span>{order.items?.length || 0} producto{order.items?.length !== 1 ? 's' : ''}</span>
+                      <strong>Total: S/ {Number(order.total ?? 0).toFixed(2)}</strong>
                     </div>
                   </div>
                 ))}
@@ -522,7 +515,7 @@ const OrderTaking = () => {
                 >
                   <option value="">Seleccionar entrada</option>
                   {getItemsBySection('ENTRADA').map((item) => (
-                    <option key={item.id} value={item.id}>{item.product.name}</option>
+                    <option key={item.id} value={item.id}>{item.productName}</option>
                   ))}
                 </select>
               </div>
@@ -538,7 +531,7 @@ const OrderTaking = () => {
                 >
                   <option value="">Seleccionar plato de fondo</option>
                   {getItemsBySection('PLATO DE FONDO').map((item) => (
-                    <option key={item.id} value={item.id}>{item.product.name}</option>
+                    <option key={item.id} value={item.id}>{item.productName}</option>
                   ))}
                 </select>
               </div>
@@ -554,7 +547,7 @@ const OrderTaking = () => {
                 >
                   <option value="">Seleccionar bebida</option>
                   {getItemsBySection('BEBIDA').map((item) => (
-                    <option key={item.id} value={item.id}>{item.product.name}</option>
+                    <option key={item.id} value={item.id}>{item.productName}</option>
                   ))}
                 </select>
               </div>
@@ -573,6 +566,14 @@ const OrderTaking = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {showPaymentModal && (
+        <PaymentModal
+          tableId={selectedTable.id}
+          onClose={() => setShowPaymentModal(false)}
+          onPaymentComplete={handlePaymentComplete}
+        />
       )}
 
       {toast.show && (

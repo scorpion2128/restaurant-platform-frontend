@@ -121,19 +121,19 @@
 
 /* Estados del indicador de orden */
 .order-indicator-pending {
-  background: #9ca3af; /* Gris - Pendiente */
+  background: #ff9800; /* Naranja - Pendiente */
 }
 
 .order-indicator-preparation {
-  background: #06b6d4; /* Turquesa - En preparación */
+  background: #2196f3; /* Turquesa - En preparación */
 }
 
 .order-indicator-ready {
-  background: #3b82f6; /* Azul - Listo para entregar */
+  background: #4caf50; /* Verde - Listo para entregar */
 }
 
 .order-indicator-delivered {
-  background: #f59e0b; /* Naranja - Entregado */
+  background: #fbf020; /* Naranja - Entregado */
 }
 
 /* ============================================
@@ -278,11 +278,12 @@
    PANEL DE ÓRDENES ACTIVAS
    ============================================ */
 .orders-section-large {
-  margin-top: 3rem;
+  margin-top: 2rem;
   background: var(--bg-card);
   border-radius: 1rem;
-  padding: 1.5rem;
+  padding: 1.5rem 1.75rem 1.75rem;
   box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
 }
 
 /* Header del panel de órdenes */
@@ -290,56 +291,56 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
-.header-title h3 {
+.orders-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: max-content;
+}
+
+.orders-title-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 0.75rem;
+  background: #fff7ed;
+  font-size: 1.25rem;
+}
+
+.orders-header-title h3 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   color: var(--text-primary);
+}
+
+.orders-header-title p {
+  margin: 0.2rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
 }
 
 .header-controls {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
-}
-
-/* Filtros de órdenes */
-.filter-group {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.filter-btn {
-  padding: 0.5rem 1rem;
-  border: 2px solid var(--border);
-  background: white;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: var(--text-secondary);
-}
-
-.filter-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.filter-btn.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: white;
+  flex: 1;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 .sound-toggle-btn {
-  padding: 0.5rem 0.75rem;
-  border: 2px solid var(--border);
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid var(--border);
   background: white;
   border-radius: 0.5rem;
   font-size: 1.25rem;
@@ -351,21 +352,132 @@
   border-color: var(--primary);
 }
 
-/* Grid de tarjetas de órdenes */
-.orders-grid-large {
+/* Tablero de seguimiento */
+.orders-board {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
+  align-items: start;
+}
+
+.orders-board-column {
+  min-width: 0;
+  padding: 0.875rem;
+  border: 1px solid;
+  border-radius: 0.875rem;
+}
+
+.orders-board-column.column-pending {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.orders-board-column.column-preparation {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.orders-board-column.column-ready {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.orders-column-header,
+.orders-column-title {
+  display: flex;
+  align-items: center;
+}
+
+.orders-column-header {
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+
+.orders-column-title {
+  gap: 0.5rem;
+}
+
+.orders-column-title h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.orders-column-indicator {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.column-pending .orders-column-indicator {
+  background: #ff9800;
+}
+
+.column-preparation .orders-column-indicator {
+  background: #2196f3;
+}
+
+.column-ready .orders-column-indicator {
+  background: #4caf50;
+}
+
+.orders-column-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.orders-column-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.orders-column-empty {
+  display: grid;
+  place-items: center;
+  min-height: 7rem;
+  border: 1px dashed rgba(100, 116, 139, 0.35);
+  border-radius: 0.75rem;
+  color: #64748b;
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 0.875rem;
 }
 
 /* Tarjeta de orden individual */
 .order-card-large {
   background: white;
   border-radius: 0.75rem;
-  padding: 1.25rem;
-  border: 2px solid var(--border);
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-top: 4px solid #cbd5e1;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.order-card-large.status-pending {
+  border-top-color: #f59e0b;
+}
+
+.order-card-large.status-in_preparation {
+  border-top-color: #2196f3;
+}
+
+.order-card-large.status-ready {
+  border-top-color: #10b981;
+}
+
+.order-card-large.status-delivered {
+  border-top-color: #94a3b8;
 }
 
 .order-card-large:hover {
@@ -386,6 +498,12 @@
   color: var(--text-primary);
 }
 
+.order-reference {
+  margin-top: 0.2rem;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
 /* Estados de orden en tarjetas */
 .status-tag {
   text-align: right;
@@ -394,7 +512,9 @@
 .status-main {
   font-size: 0.875rem;
   font-weight: 600;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
 }
 
 .status-time {
@@ -403,19 +523,23 @@
 }
 
 .order-card-large.status-pending .status-main {
-  color: #9ca3af;
+  color: #92400e;
+  background: #fef3c7;
 }
 
 .order-card-large.status-in_preparation .status-main {
-  color: #06b6d4;
+  color: #1e40af;
+  background: #dbeafe;
 }
 
 .order-card-large.status-ready .status-main {
-  color: #10b981;
+  color: #047857;
+  background: #d1fae5;
 }
 
 .order-card-large.status-delivered .status-main {
   color: #6b7280;
+  background: #f1f5f9;
 }
 
 /* Cuerpo de la tarjeta de orden */
@@ -479,18 +603,6 @@
   background: #059669;
 }
 
-/* Estado sin órdenes */
-.no-orders-large {
-  text-align: center;
-  padding: 3rem 1rem;
-  color: var(--text-secondary);
-}
-
-.no-orders-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
 /* ============================================
    RESPONSIVE DESIGN
    ============================================ */
@@ -498,8 +610,13 @@
 /* Tablets grandes y pantallas medianas */
 @media (max-width: 1300px) {
   .tables-grid {
-    grid-template-columns: repeat(auto-fill, 160px);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 1.5rem;
+  }
+
+  .table-card {
+    width: 100%;
+    min-width: 0;
   }
 }
 
@@ -510,17 +627,18 @@
   }
 
   .tables-grid {
-    grid-template-columns: repeat(auto-fill, 140px);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 1.25rem;
   }
 
   .table-card {
-    width: 140px;
+    width: 100%;
+    min-width: 0;
   }
 
   .table-circle {
-    width: 100px;
-    height: 100px;
+    width: 96px;
+    height: 96px;
   }
 
   .table-number {
@@ -536,7 +654,12 @@
     align-items: flex-start;
   }
 
-  .orders-grid-large {
+  .header-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .orders-board {
     grid-template-columns: 1fr;
   }
 }
@@ -592,12 +715,16 @@
     border-width: 2px;
   }
 
-  .filter-btn {
-    font-size: 0.75rem;
-    padding: 0.375rem 0.75rem;
+  .orders-section-large {
+    padding: 1rem;
+  }
+
+  .header-controls {
+    align-items: flex-start;
   }
 
   .sound-toggle-btn {
     font-size: 1rem;
+    flex-shrink: 0;
   }
 }

@@ -36,6 +36,12 @@ export const orderService = {
     return response;
   },
 
+  // Obtener únicamente los pedidos activos de una mesa
+  getActiveOrdersByTable: async (tableId) => {
+    const response = await api.get(`/orders/table/${tableId}/active`);
+    return response;
+  },
+
   // Obtener pedidos para cocina
   getOrdersForKitchen: async () => {
     const response = await api.get(ORDERS.KITCHEN);
