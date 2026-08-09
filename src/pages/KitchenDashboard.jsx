@@ -107,7 +107,9 @@ const KitchenDashboard = () => {
         <div className="order-header">
           <div className="order-title">
             <span className="order-number">{order.orderNumber}</span>
-            <span className="table-badge">MESA {order.tableId || 'N/A'}</span>
+            <span className="table-badge">
+              {order.orderType === 'DELIVERY' ? `DELIVERY · ${order.customerName}` : `MESA ${order.tableId || 'N/A'}`}
+            </span>
           </div>
           <span className="order-time">
             {new Date(order.createdAt).toLocaleTimeString('es-PE', { 

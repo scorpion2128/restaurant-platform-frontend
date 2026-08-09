@@ -808,7 +808,7 @@
 }
 
 /* Modal */
-.modal-overlay {
+.order-taking-menu-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -821,7 +821,7 @@
   z-index: 1000;
 }
 
-.modal-content {
+.order-taking-menu-modal {
   background: white;
   border-radius: 8px;
   width: 90%;
@@ -831,7 +831,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-.modal-header {
+.order-taking-menu-modal .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -839,12 +839,12 @@
   border-bottom: 1px solid #e0e0e0;
 }
 
-.modal-header h3 {
+.order-taking-menu-modal .modal-header h3 {
   margin: 0;
   color: #333;
 }
 
-.btn-close {
+.order-taking-menu-modal .btn-close {
   background: none;
   border: none;
   font-size: 28px;
@@ -853,11 +853,11 @@
   line-height: 1;
 }
 
-.btn-close:hover {
+.order-taking-menu-modal .btn-close:hover {
   color: #333;
 }
 
-.modal-body {
+.order-taking-menu-modal .modal-body {
   padding: 20px;
 }
 
@@ -920,7 +920,7 @@
   font-size: 18px;
 }
 
-.modal-footer {
+.order-taking-menu-modal .modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
@@ -928,8 +928,8 @@
   border-top: 1px solid #e0e0e0;
 }
 
-.btn-cancel,
-.btn-confirm {
+.order-taking-menu-modal .btn-cancel,
+.order-taking-menu-modal .btn-confirm {
   padding: 0.625rem 1.25rem;
   border: none;
   border-radius: 0.5rem;
@@ -939,21 +939,21 @@
   transition: all 0.2s ease;
 }
 
-.btn-cancel {
+.order-taking-menu-modal .btn-cancel {
   background: var(--secondary);
   color: white;
 }
 
-.btn-cancel:hover {
+.order-taking-menu-modal .btn-cancel:hover {
   background: #0f3c47;
 }
 
-.btn-confirm {
+.order-taking-menu-modal .btn-confirm {
   background: var(--primary);
   color: white;
 }
 
-.btn-confirm:hover {
+.order-taking-menu-modal .btn-confirm:hover {
   background: var(--primary-dark);
 }
 
@@ -1232,4 +1232,112 @@
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* Selector y seguimiento de pedidos delivery */
+.order-mode-shell {
+  width: 100%;
+}
+
+.order-mode-tabs {
+  display: flex;
+  gap: 0.5rem;
+  max-width: 72rem;
+  margin: 1.5rem auto 0;
+  padding: 0 1.5rem;
+}
+
+.order-mode-tabs button {
+  min-width: 8rem;
+  padding: 0.7rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: #fff;
+  color: var(--text-secondary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.order-mode-tabs button.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.delivery-dashboard {
+  max-width: 72rem;
+  margin: 1rem auto;
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: var(--shadow-md);
+}
+
+.delivery-dashboard-header,
+.delivery-order-head,
+.delivery-order-summary,
+.packaging-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.delivery-dashboard-header p { color: var(--text-secondary); }
+
+.btn-new-delivery,
+.delivery-order-card > button {
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: 0.65rem;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.delivery-orders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.delivery-order-card {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-top: 4px solid #f59e0b;
+  border-radius: 0.85rem;
+  background: #fffbeb;
+}
+
+.delivery-status-in_preparation { border-top-color: #3b82f6; background: #eff6ff; }
+.delivery-status-ready { border-top-color: #10b981; background: #ecfdf5; }
+.delivery-status-delivered { border-top-color: #64748b; background: #f8fafc; }
+.delivery-order-card a { color: #2563eb; text-decoration: none; }
+.delivery-order-card p, .delivery-order-card small { color: var(--text-secondary); }
+.delivery-empty { grid-column: 1 / -1; padding: 3rem; text-align: center; color: var(--text-secondary); }
+.delivery-form-modal { max-width: 38rem; }
+.delivery-form-modal .modal-form { display: grid; gap: 0.9rem; }
+.delivery-form-modal .form-group { margin: 0; }
+.delivery-form-modal label { font-weight: 600; color: var(--text-primary); }
+.delivery-form-modal .input { width: 100%; }
+
+.packaging-summary {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px dashed var(--border);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .order-mode-tabs { padding: 0 1rem; }
+  .order-mode-tabs button { flex: 1; min-width: 0; }
+  .delivery-dashboard { margin: 1rem; padding: 1rem; }
+  .delivery-dashboard-header { align-items: stretch; flex-direction: column; }
+  .btn-new-delivery { width: 100%; }
 }

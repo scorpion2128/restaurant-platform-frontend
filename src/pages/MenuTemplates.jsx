@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { USER_ROLES, hasRole } from '../constants'
 import Layout from '../components/Layout/Layout'
 import { useToast, ToastContainer } from '../components/Toast/Toast'
+import { useConfirmDialog } from '../components/ConfirmDialog/ConfirmDialog'
 import menuTemplateService from '../services/menuTemplateService'
 import menuSectionService from '../services/menuSectionService'
 import productService from '../services/productService'
@@ -14,6 +15,7 @@ const MenuTemplates = () => {
   const { user: currentUser } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
+  const confirm = useConfirmDialog()
 
   useEffect(() => {
     if (currentUser && !hasRole(currentUser, USER_ROLES.ADMIN)) {
@@ -182,7 +184,12 @@ const MenuTemplates = () => {
   }
 
   const handleDeleteSection = async (sectionId) => {
-    if (!window.confirm('¿Estás seguro de eliminar esta sección? Los productos sin sección permanecerán en la plantilla.')) {
+    const confirmed = await confirm({
+      title: 'Eliminar sección',
+      message: 'Los productos de esta sección permanecerán en la plantilla sin una sección asignada. ¿Deseas continuar?',
+      confirmLabel: 'Eliminar'
+    })
+    if (!confirmed) {
       return
     }
     
@@ -248,7 +255,12 @@ const MenuTemplates = () => {
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Estás seguro de eliminar esta plantilla?')) {
+    const confirmed = await confirm({
+      title: 'Eliminar plantilla',
+      message: '¿Estás seguro de eliminar esta plantilla? Esta acción no se puede deshacer.',
+      confirmLabel: 'Eliminar'
+    })
+    if (!confirmed) {
       return
     }
     
@@ -465,7 +477,7 @@ const MenuTemplates = () => {
   if (loading && templates.length === 0) {
     return (
       <Layout>
-        <div className="users-page">
+        <div className="users-page menu-templates-page">
           <div className="loading-state">
             <div className="spinner"></div>
             <p>Cargando plantillas...</p>
@@ -477,7 +489,7 @@ const MenuTemplates = () => {
 
   return (
     <Layout>
-      <div className="users-page">
+      <div className="users-page menu-templates-page">
         <ToastContainer toasts={toast.toasts} removeToast={toast.removeToast} />
         
         <div className="users-header">
@@ -753,12 +765,12 @@ const MenuTemplates = () => {
                                   </svg>
                                   {section.name}
                                 </h4>
-                                <table className="users-table">
+                                <table className="users-table template-items-table">
                                   <tbody>
                                     {section.items.map(item => (
                                       <tr key={item.id}>
-                                        <td>{item.productName}</td>
-                                        <td>S/ {item.productPrice.toFixed(2)}</td>
+                                        <td className="template-product-name">{item.productName}</td>
+                                        <td className="template-product-price">S/ {item.productPrice.toFixed(2)}</td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -1160,9 +1172,8 @@ const MenuTemplates = () => {
 
               <div className="modal-form">
                 <button 
-                  className="btn btn-primary" 
+                  className="btn btn-primary modal-inline-action"
                   onClick={handleCreateSection}
-                  style={{ marginBottom: '16px', width: '100%' }}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '16px', height: '16px', marginRight: '8px' }}>
                     <line x1="12" y1="5" x2="12" y2="19" />

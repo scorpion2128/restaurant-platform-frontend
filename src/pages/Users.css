@@ -518,10 +518,27 @@
 .modal-actions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border);
+}
+
+/* Acciones compartidas de todos los formularios modales administrativos */
+.modal-actions .btn,
+.modal-footer .btn,
+.modal-footer .btn-primary,
+.modal-footer .btn-secondary {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 8.5rem;
+  justify-content: center;
+}
+
+.modal-inline-action {
+  width: auto;
+  margin-bottom: 1rem;
 }
 
 .btn-cancel {
@@ -590,6 +607,12 @@
     width: 100%;
   }
 
+  .items-per-page select {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+
   .pagination {
     width: 100%;
     justify-content: center;
@@ -607,6 +630,50 @@
     min-width: 900px;
   }
 
+  .menu-templates-page .users-table-container,
+  .product-categories-page .users-table-container,
+  .daily-menus-page .users-table-container {
+    overflow-x: hidden;
+  }
+
+  .menu-templates-page .template-items-table,
+  .product-categories-page .users-table,
+  .daily-menus-page .daily-menus-table {
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .daily-menus-page .daily-menus-table th,
+  .daily-menus-page .daily-menus-table td {
+    padding: 0.75rem;
+    overflow-wrap: anywhere;
+  }
+
+  .daily-menus-page .daily-menus-table .actions-cell {
+    gap: 0.375rem;
+    overflow-wrap: normal;
+  }
+
+  .daily-menus-page .daily-menus-table .btn-icon {
+    flex-shrink: 0;
+  }
+
+  .menu-templates-page .template-product-name {
+    overflow-wrap: anywhere;
+  }
+
+  .menu-templates-page .template-product-price {
+    width: 7rem;
+    padding-left: 0.75rem;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .product-categories-page .users-table th:last-child,
+  .product-categories-page .users-table td:last-child {
+    width: 9rem;
+  }
+
   .form-row {
     grid-template-columns: 1fr;
   }
@@ -617,6 +684,25 @@
 
   .pagination {
     flex-wrap: wrap;
+  }
+}
+
+/* Tablets: formularios compactos, sin botones ni modales sobredimensionados */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .users-header-actions .btn-action,
+  .users-header-actions .btn-secondary {
+    width: auto;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .modal-form .form-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .products-page .modal-content {
+    max-height: none;
+    overflow-y: visible;
   }
 }
 
@@ -807,9 +893,45 @@
 }
 
 /* Modal Footer */
+.delivery-packaging-option {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid #fed7aa;
+  border-radius: 0.75rem;
+  background: #fff7ed;
+  cursor: pointer;
+}
+
+.delivery-packaging-option input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.15rem;
+  accent-color: var(--primary);
+}
+
+.delivery-packaging-option span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.delivery-packaging-option strong {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.delivery-packaging-option small {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 0.75rem;
   padding: 1.25rem 1.5rem;
   border-top: 1px solid #e5e7eb;

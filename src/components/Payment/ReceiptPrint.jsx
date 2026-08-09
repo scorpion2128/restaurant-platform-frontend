@@ -136,6 +136,9 @@ const ReceiptPrint = ({ receipt, onClose }) => {
                     <div className="receipt-order-header">
                       Orden: {order.orderNumber}
                     </div>
+                    {order.packagingTotal > 0 && (
+                      <div className="receipt-item"><span>{order.packagingUnits}x Empaque delivery</span><span>S/ {order.packagingTotal.toFixed(2)}</span></div>
+                    )}
                     
                     {groups.map((group, groupIdx) => (
                       <div key={groupIdx} className="receipt-group">

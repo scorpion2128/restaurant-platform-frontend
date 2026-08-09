@@ -21,6 +21,7 @@ export const ORDERS = {
   BY_ID: (id) => `${ORDERS_PATH}/${id}`,
   BY_STATUS: (status) => `${ORDERS_PATH}/status/${status}`,
   WAITER_ACTIVE: `${ORDERS_PATH}/waiter/active`,
+  DELIVERY_ACTIVE: `${ORDERS_PATH}/delivery/active`,
   KITCHEN: `${ORDERS_PATH}/kitchen`,
   UPDATE_STATUS: (id) => `${ORDERS_PATH}/${id}/status`,
 }
@@ -32,6 +33,7 @@ export const PAYMENTS = {
   BY_ID: (id) => `${PAYMENTS_PATH}/${id}`,
   RECEIPT: (id) => `${PAYMENTS_PATH}/${id}/receipt`,
   TABLE_ACCOUNT: (tableId) => `${PAYMENTS_PATH}/table/${tableId}/account`,
+  ORDER_ACCOUNT: (orderId) => `${PAYMENTS_PATH}/order/${orderId}/account`,
 }
 
 // Product Categories

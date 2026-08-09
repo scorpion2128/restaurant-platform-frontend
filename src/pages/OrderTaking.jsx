@@ -5,10 +5,19 @@ import Toast from '../components/Toast/Toast';
 import Layout from '../components/Layout/Layout';
 import TableSelector from '../components/TableSelector/TableSelector';
 import PaymentModal from '../components/Payment/PaymentModal';
+import { useConfirmDialog } from '../components/ConfirmDialog/ConfirmDialog';
 import './OrderTaking.css';
 
 const OrderTaking = () => {
+  const confirm = useConfirmDialog();
   const [selectedTable, setSelectedTable] = useState(null);
+  const [serviceMode, setServiceMode] = useState('tables');
+  const [deliveryOrders, setDeliveryOrders] = useState([]);
+  const [showDeliveryForm, setShowDeliveryForm] = useState(false);
+  const [paymentOrderId, setPaymentOrderId] = useState(null);
+  const [deliveryCustomer, setDeliveryCustomer] = useState({
+    customerName: '', customerPhone: '', deliveryAddress: '', deliveryReference: '', orderChannel: 'WHATSAPP'
+  });
   const [menus, setMenus] = useState([]);
   const [cart, setCart] = useState([]);
   const [activeOrders, setActiveOrders] = useState([]);
@@ -23,9 +32,22 @@ const OrderTaking = () => {
   useEffect(() => {
     if (selectedTable) {
       loadTodayMenu();
-      loadTableOrders(selectedTable.id);
+      if (selectedTable.type !== 'DELIVERY') loadTableOrders(selectedTable.id);
     }
   }, [selectedTable]);
+
+  useEffect(() => {
+    if (serviceMode === 'delivery' && !selectedTable) loadDeliveryOrders();
+  }, [serviceMode, selectedTable]);
+
+  const loadDeliveryOrders = async () => {
+    try {
+      const response = await orderService.getActiveDeliveryOrders();
+      if (response.success) setDeliveryOrders(response.data || []);
+    } catch (error) {
+      showToast(error.message || 'Error al cargar los pedidos delivery', 'error');
+    }
+  };
 
   const loadTodayMenu = async () => {
     try {
@@ -87,6 +109,7 @@ const OrderTaking = () => {
         isPartOfMenu: false,
         menuGroupId: null,
         sectionName
+        ,deliveryPackaging: Boolean(item.deliveryPackaging)
       };
       setCart([...cart, newItem]);
     }
@@ -182,17 +205,44 @@ const OrderTaking = () => {
   };
 
   const calculateTotal = () => {
-    return cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0).toFixed(2);
+    return (calculateItemsTotal() + calculatePackagingTotal()).toFixed(2);
   };
+
+  const calculateItemsTotal = () => cart.reduce(
+    (sum, item) => sum + (item.unitPrice * item.quantity), 0
+  );
+
+  const calculatePackagingUnits = () => {
+    if (selectedTable?.type !== 'DELIVERY') return 0;
+    const menuGroups = new Map();
+    let units = 0;
+    cart.forEach(item => {
+      if (item.isPartOfMenu && item.menuGroupId) {
+        if (!menuGroups.has(item.menuGroupId)) menuGroups.set(item.menuGroupId, item.quantity);
+      } else if (item.deliveryPackaging) {
+        units += item.quantity;
+      }
+    });
+    return units + [...menuGroups.values()].reduce((sum, quantity) => sum + quantity, 0);
+  };
+
+  const calculatePackagingTotal = () => calculatePackagingUnits();
 
   const handleTableSelected = (table) => {
     setSelectedTable(table);
   };
 
-  const handleBackToTableSelection = () => {
+  const handleBackToTableSelection = async () => {
     if (cart.length > 0) {
-      if (window.confirm('¿Estás seguro? Se perderá el pedido actual.')) {
+      const confirmed = await confirm({
+        title: 'Descartar pedido actual',
+        message: 'Los productos agregados al carrito se perderán al volver a las mesas.',
+        confirmLabel: 'Descartar y volver',
+        variant: 'warning'
+      });
+      if (confirmed) {
         setSelectedTable(null);
+        setDeliveryCustomer({ customerName: '', customerPhone: '', deliveryAddress: '', deliveryReference: '', orderChannel: 'WHATSAPP' });
         setCart([]);
         setNextMenuGroupId(1);
       }
@@ -203,7 +253,7 @@ const OrderTaking = () => {
 
   const handleSubmitOrder = async () => {
     if (!selectedTable) {
-      showToast('Debes seleccionar una mesa', 'error');
+      showToast('Debes seleccionar una mesa o iniciar un delivery', 'error');
       return;
     }
 
@@ -215,7 +265,10 @@ const OrderTaking = () => {
     setLoading(true);
     try {
       const orderData = {
-        tableNumber: selectedTable.number,
+        orderType: selectedTable.type === 'DELIVERY' ? 'DELIVERY' : 'DINE_IN',
+        ...(selectedTable.type === 'DELIVERY'
+          ? deliveryCustomer
+          : { tableNumber: selectedTable.number }),
         items: cart.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -232,6 +285,10 @@ const OrderTaking = () => {
         showToast('Pedido creado exitosamente', 'success');
         setCart([]);
         setSelectedTable(null);
+        if (orderData.orderType === 'DELIVERY') {
+          setServiceMode('delivery');
+          loadDeliveryOrders();
+        }
         setNextMenuGroupId(1);
         loadTableOrders(selectedTable.id);
       }
@@ -283,7 +340,7 @@ const OrderTaking = () => {
   const getOrderStatusLabel = (status) => ({
     PENDING: 'Pendiente',
     IN_PREPARATION: 'En preparación',
-    READY: 'Para entregar',
+    READY: 'Listo',
     DELIVERED: 'Entregado'
   }[status] || status);
 
@@ -291,13 +348,103 @@ const OrderTaking = () => {
     setShowPaymentModal(false);
     setCart([]);
     setSelectedTable(null);
+    setPaymentOrderId(null);
+    loadDeliveryOrders();
   };
 
-  // Si no hay mesa seleccionada, mostrar selector de mesas
+  const handleStartDelivery = (event) => {
+    event.preventDefault();
+    if (!deliveryCustomer.customerName.trim() || !deliveryCustomer.customerPhone.trim() || !deliveryCustomer.deliveryAddress.trim()) {
+      showToast('Completa nombre, teléfono y dirección del cliente', 'error');
+      return;
+    }
+    setShowDeliveryForm(false);
+    setSelectedTable({ type: 'DELIVERY' });
+    setActiveOrders([]);
+  };
+
+  const handleDeliveryStatus = async (orderId, status) => {
+    try {
+      await orderService.updateOrderStatus(orderId, status);
+      showToast(status === 'DELIVERED' ? 'Pedido marcado como entregado' : 'Estado actualizado', 'success');
+      loadDeliveryOrders();
+    } catch (error) {
+      showToast(error.message || 'No se pudo actualizar el pedido', 'error');
+    }
+  };
+
+  // Selección del tipo de atención
   if (!selectedTable) {
     return (
       <Layout>
-        <TableSelector onTableSelected={handleTableSelected} />
+        <div className="order-mode-shell">
+          <div className="order-mode-tabs" role="tablist" aria-label="Tipo de atención">
+            <button className={serviceMode === 'tables' ? 'active' : ''} onClick={() => setServiceMode('tables')}>Mesas</button>
+            <button className={serviceMode === 'delivery' ? 'active' : ''} onClick={() => setServiceMode('delivery')}>Delivery</button>
+          </div>
+
+          {serviceMode === 'tables' ? (
+            <TableSelector onTableSelected={handleTableSelected} />
+          ) : (
+            <section className="delivery-dashboard">
+              <div className="delivery-dashboard-header">
+                <div>
+                  <h2>Pedidos a domicilio</h2>
+                  <p>Registra y realiza seguimiento a los pedidos delivery.</p>
+                </div>
+                <button className="btn-new-delivery" onClick={() => setShowDeliveryForm(true)}>+ Nuevo delivery</button>
+              </div>
+
+              <div className="delivery-orders-grid">
+                {deliveryOrders.map(order => (
+                  <article className={`delivery-order-card delivery-status-${order.status.toLowerCase()}`} key={order.id}>
+                    <div className="delivery-order-head">
+                      <strong>{order.orderNumber}</strong>
+                      <span>{getOrderStatusLabel(order.status)}</span>
+                    </div>
+                    <h3>{order.customerName}</h3>
+                    <a href={`tel:${order.customerPhone}`}>{order.customerPhone}</a>
+                    <p>{order.deliveryAddress}</p>
+                    {order.deliveryReference && <small>Ref.: {order.deliveryReference}</small>}
+                    <div className="delivery-order-summary">
+                      <span>{order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0)} productos</span>
+                      <strong>S/ {Number(order.total || 0).toFixed(2)}</strong>
+                    </div>
+                    {order.status === 'READY' && (
+                      <button onClick={() => handleDeliveryStatus(order.id, 'DELIVERED')}>Marcar como entregado</button>
+                    )}
+                    {order.status === 'DELIVERED' && (
+                      <button onClick={() => { setPaymentOrderId(order.id); setShowPaymentModal(true); }}>Cobrar pedido</button>
+                    )}
+                  </article>
+                ))}
+                {deliveryOrders.length === 0 && <div className="delivery-empty">No hay pedidos delivery activos.</div>}
+              </div>
+            </section>
+          )}
+        </div>
+
+        {showDeliveryForm && (
+          <div className="modal-overlay" onClick={() => setShowDeliveryForm(false)}>
+            <div className="modal-content delivery-form-modal" onClick={event => event.stopPropagation()}>
+              <div className="modal-header"><h2>Nuevo pedido delivery</h2><button className="modal-close" onClick={() => setShowDeliveryForm(false)}>×</button></div>
+              <form className="modal-form" onSubmit={handleStartDelivery}>
+                <div className="form-row">
+                  <div className="form-group"><label>Cliente *</label><input className="input" value={deliveryCustomer.customerName} onChange={e => setDeliveryCustomer({...deliveryCustomer, customerName: e.target.value})} /></div>
+                  <div className="form-group"><label>Teléfono *</label><input className="input" type="tel" value={deliveryCustomer.customerPhone} onChange={e => setDeliveryCustomer({...deliveryCustomer, customerPhone: e.target.value})} /></div>
+                </div>
+                <div className="form-group"><label>Dirección *</label><input className="input" value={deliveryCustomer.deliveryAddress} onChange={e => setDeliveryCustomer({...deliveryCustomer, deliveryAddress: e.target.value})} /></div>
+                <div className="form-group"><label>Referencia</label><input className="input" value={deliveryCustomer.deliveryReference} onChange={e => setDeliveryCustomer({...deliveryCustomer, deliveryReference: e.target.value})} /></div>
+                <div className="form-group"><label>Canal del pedido</label><select className="input" value={deliveryCustomer.orderChannel} onChange={e => setDeliveryCustomer({...deliveryCustomer, orderChannel: e.target.value})}><option value="WHATSAPP">WhatsApp</option><option value="CALL">Llamada</option><option value="IN_PERSON">Presencial</option><option value="OTHER">Otro</option></select></div>
+                <div className="modal-actions"><button type="button" className="btn btn-cancel" onClick={() => setShowDeliveryForm(false)}>Cancelar</button><button className="btn btn-primary" type="submit">Continuar al pedido</button></div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {showPaymentModal && paymentOrderId && (
+          <PaymentModal orderId={paymentOrderId} onClose={() => { setShowPaymentModal(false); setPaymentOrderId(null); }} onPaymentComplete={handlePaymentComplete} />
+        )}
         {toast.show && (
           <Toast
             message={toast.message}
@@ -317,12 +464,12 @@ const OrderTaking = () => {
           <div className="header-left">
             <button className="btn-back" onClick={handleBackToTableSelection}>
               <span className="btn-back-icon" aria-hidden="true">←</span>
-              <span>Mesas</span>
+              <span>{selectedTable.type === 'DELIVERY' ? 'Delivery' : 'Mesas'}</span>
             </button>
-            <h2>Tomar Pedido - Mesa {selectedTable.number}</h2>
+            <h2>{selectedTable.type === 'DELIVERY' ? `Delivery - ${deliveryCustomer.customerName}` : `Tomar Pedido - Mesa ${selectedTable.number}`}</h2>
           </div>
           <div className="header-right">
-            {hasDeliveredOrders && (
+            {selectedTable.type !== 'DELIVERY' && hasDeliveredOrders && (
               <button className="btn-view-account" onClick={() => setShowPaymentModal(true)}>
                 💳 Ver cuenta / Pagar
               </button>
@@ -435,6 +582,12 @@ const OrderTaking = () => {
                 })}
               </div>
               <div className="cart-footer">
+                {selectedTable.type === 'DELIVERY' && calculatePackagingUnits() > 0 && (
+                  <div className="packaging-summary">
+                    <span>Empaque delivery ({calculatePackagingUnits()} {calculatePackagingUnits() === 1 ? 'unidad' : 'unidades'})</span>
+                    <strong>S/ {calculatePackagingTotal().toFixed(2)}</strong>
+                  </div>
+                )}
                 <div className="cart-total">
                   <strong>Total:</strong>
                   <strong>S/ {calculateTotal()}</strong>
@@ -497,8 +650,8 @@ const OrderTaking = () => {
 
       {/* Modal armar menú */}
       {showMenuModal && (
-        <div className="modal-overlay" onClick={() => setShowMenuModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay order-taking-menu-overlay" onClick={() => setShowMenuModal(false)}>
+          <div className="modal-content order-taking-menu-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Armar Menú Completo</h3>
               <button className="btn-close" onClick={() => setShowMenuModal(false)}>×</button>

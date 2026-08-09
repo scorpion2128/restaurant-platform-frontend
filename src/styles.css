@@ -1630,6 +1630,83 @@ select::-ms-expand {
   }
 }
 
+/* Tablets horizontales con poca altura útil (por ejemplo Galaxy Tab S4) */
+@media (min-width: 641px) and (max-width: 1366px) and (max-height: 800px) and (orientation: landscape) {
+  .login-container {
+    min-height: 100dvh;
+    height: 100dvh;
+    padding: 0.75rem;
+  }
+
+  .login-card {
+    width: min(100%, 460px);
+    max-width: 460px;
+    max-height: calc(100dvh - 1.5rem);
+    padding: 1.25rem 2rem;
+    overflow-y: auto;
+  }
+
+  .login-logo {
+    margin-bottom: 0.875rem;
+  }
+
+  .logo-icon {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 0.625rem;
+    border-radius: 0.875rem;
+  }
+
+  .logo-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .login-logo h1 {
+    margin-bottom: 0.125rem;
+    font-size: 1.5rem;
+  }
+
+  .login-logo p {
+    font-size: 0.8125rem;
+  }
+
+  .login-form {
+    gap: 0.625rem;
+  }
+
+  .input-wrapper {
+    min-height: 64px;
+  }
+
+  .input-with-icon .input {
+    height: 48px;
+    font-size: 0.875rem;
+  }
+
+  .login-button {
+    height: 46px;
+    margin-top: 0;
+    padding: 0.625rem 1rem;
+    font-size: 0.9375rem;
+  }
+
+  .login-footer {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .login-footer p {
+    font-size: 0.8125rem;
+    line-height: 1.35;
+  }
+
+  .restaurant-selection {
+    max-height: min(240px, 35dvh);
+    margin: 0.75rem 0;
+  }
+}
+
 /* Landscape mode para Dashboard */
 @media (max-width: 896px) and (orientation: landscape) {
   .stats-grid,

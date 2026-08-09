@@ -5,7 +5,7 @@ import PreReceiptPrint from './PreReceiptPrint';
 import ReceiptPrint from './ReceiptPrint';
 import './PaymentModal.css';
 
-const PaymentModal = ({ tableId, onClose, onPaymentComplete }) => {
+const PaymentModal = ({ tableId, orderId, onClose, onPaymentComplete }) => {
   const [account, setAccount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('account'); // 'account' o 'payment'
@@ -20,13 +20,15 @@ const PaymentModal = ({ tableId, onClose, onPaymentComplete }) => {
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
-    loadTableAccount();
-  }, [tableId]);
+    loadAccount();
+  }, [tableId, orderId]);
 
-  const loadTableAccount = async () => {
+  const loadAccount = async () => {
     try {
       setLoading(true);
-      const response = await paymentService.getTableAccount(tableId);
+      const response = orderId
+        ? await paymentService.getOrderAccount(orderId)
+        : await paymentService.getTableAccount(tableId);
       if (response.success) {
         setAccount(response.data);
       } else {
@@ -194,7 +196,7 @@ const PaymentModal = ({ tableId, onClose, onPaymentComplete }) => {
 
   if (loading) {
     return (
-      <div className="modal-overlay">
+      <div className="modal-overlay payment-modal-overlay">
         <div className="payment-modal">
           <div className="loading">Cargando cuenta...</div>
         </div>
@@ -208,7 +210,7 @@ const PaymentModal = ({ tableId, onClose, onPaymentComplete }) => {
 
   return (
     <>
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay payment-modal-overlay" onClick={onClose}>
         <div className="payment-modal" onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div className="payment-modal-header">
@@ -266,6 +268,13 @@ const PaymentModal = ({ tableId, onClose, onPaymentComplete }) => {
                             </div>
                           ))}
                         </div>
+                        {order.packagingTotal > 0 && (
+                          <div className="order-item-row packaging-charge-row">
+                            <span>{order.packagingUnits}x</span>
+                            <span className="item-name">Empaque delivery</span>
+                            <span className="item-price">S/ {order.packagingTotal.toFixed(2)}</span>
+                          </div>
+                        )}
                         <div className="order-total">
                           Total: <strong>S/ {order.total.toFixed(2)}</strong>
                         </div>

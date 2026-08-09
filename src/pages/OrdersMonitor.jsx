@@ -228,7 +228,9 @@ const OrdersMonitor = () => {
               >
                 <div className="order-info-row">
                   <span className="order-number">{order.orderNumber}</span>
-                  <span className="table-info">Mesa {order.tableId || 'N/A'}</span>
+                  <span className="table-info">
+                    {order.orderType === 'DELIVERY' ? `Delivery · ${order.customerName}` : `Mesa ${order.tableId || 'N/A'}`}
+                  </span>
                   <span className={`status-badge ${getStatusBadgeClass(order.status)}`}>
                     {getStatusText(order.status)}
                   </span>

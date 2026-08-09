@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { USER_ROLES, hasRole } from '../constants'
 import Layout from '../components/Layout/Layout'
 import { useToast, ToastContainer } from '../components/Toast/Toast'
+import { useConfirmDialog } from '../components/ConfirmDialog/ConfirmDialog'
 import productCategoryService from '../services/productCategoryService'
 import '../pages/Users.css'
 
@@ -11,6 +12,7 @@ const ProductCategories = () => {
   const { user: currentUser } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
+  const confirm = useConfirmDialog()
 
   useEffect(() => {
     if (currentUser && !hasRole(currentUser, USER_ROLES.ADMIN)) {
@@ -83,7 +85,12 @@ const ProductCategories = () => {
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Estás seguro de eliminar esta categoría?')) {
+    const confirmed = await confirm({
+      title: 'Eliminar categoría',
+      message: '¿Estás seguro de eliminar esta categoría? Esta acción no se puede deshacer.',
+      confirmLabel: 'Eliminar'
+    })
+    if (!confirmed) {
       return
     }
     
@@ -137,7 +144,7 @@ const ProductCategories = () => {
   if (loading && categories.length === 0) {
     return (
       <Layout>
-        <div className="users-page">
+        <div className="users-page product-categories-page">
           <div className="loading-state">
             <div className="spinner"></div>
             <p>Cargando categorías...</p>
@@ -149,7 +156,7 @@ const ProductCategories = () => {
 
   return (
     <Layout>
-      <div className="users-page">
+      <div className="users-page product-categories-page">
         <ToastContainer toasts={toast.toasts} removeToast={toast.removeToast} />
         
         <div className="users-header">

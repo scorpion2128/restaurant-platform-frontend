@@ -47,7 +47,7 @@ const TableSelector = ({ onTableSelected }) => {
       const response = await orderService.getActiveOrdersByWaiter();
       
       if (response.success) {
-        const orders = response.data || [];
+        const orders = (response.data || []).filter(order => order.orderType !== 'DELIVERY');
         setActiveOrders(orders);
         
         // Detectar nuevas órdenes listas

@@ -8,6 +8,10 @@ export const paymentService = {
     return response;
   },
 
+  getOrderAccount: async (orderId) => {
+    return api.get(PAYMENTS.ORDER_ACCOUNT(orderId));
+  },
+
   // Procesar pago
   processPayment: async (paymentData) => {
     const response = await api.post(PAYMENTS.BASE, paymentData);

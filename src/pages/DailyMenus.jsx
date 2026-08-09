@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { USER_ROLES, hasRole } from '../constants'
 import Layout from '../components/Layout/Layout'
 import { useToast, ToastContainer } from '../components/Toast/Toast'
+import { useConfirmDialog } from '../components/ConfirmDialog/ConfirmDialog'
 import dailyMenuService from '../services/dailyMenuService'
 import recurringMenuService from '../services/recurringMenuService'
 import menuTemplateService from '../services/menuTemplateService'
@@ -33,6 +34,7 @@ const DailyMenus = () => {
   const { user: currentUser } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
+  const confirm = useConfirmDialog()
 
   // Tab state
   const [activeTab, setActiveTab] = useState('recurring') // 'recurring' or 'overrides'
@@ -159,7 +161,12 @@ const DailyMenus = () => {
 
   const handleDeleteRecurring = async (dayOfWeek) => {
     const dayName = DAYS_OF_WEEK.find(d => d.value === dayOfWeek)?.name
-    if (!window.confirm(`¿Eliminar configuración para todos los ${dayName}?`)) {
+    const confirmed = await confirm({
+      title: 'Eliminar menú recurrente',
+      message: `Se eliminará la configuración para todos los ${dayName}. ¿Deseas continuar?`,
+      confirmLabel: 'Eliminar'
+    })
+    if (!confirmed) {
       return
     }
 
@@ -173,7 +180,12 @@ const DailyMenus = () => {
   }
 
   const handleDeleteOverride = async (id, menuDate) => {
-    if (!window.confirm(`¿Eliminar menú específico del ${menuDate}?`)) {
+    const confirmed = await confirm({
+      title: 'Eliminar fecha específica',
+      message: `Se eliminará el menú específico del ${formatDate(menuDate)}. ¿Deseas continuar?`,
+      confirmLabel: 'Eliminar'
+    })
+    if (!confirmed) {
       return
     }
 
@@ -236,7 +248,7 @@ const DailyMenus = () => {
   if ((recurringLoading && activeTab === 'recurring') || (overridesLoading && activeTab === 'overrides')) {
     return (
       <Layout>
-        <div className="users-page">
+        <div className="users-page daily-menus-page">
           <div className="loading-state">
             <div className="spinner"></div>
             <p>Cargando...</p>
@@ -248,7 +260,7 @@ const DailyMenus = () => {
 
   return (
     <Layout>
-      <div className="users-page">
+      <div className="users-page daily-menus-page">
         <ToastContainer toasts={toast.toasts} removeToast={toast.removeToast} />
 
         {/* Header */}
@@ -306,7 +318,7 @@ const DailyMenus = () => {
         {activeTab === 'recurring' ? (
           <div className="card" style={{ padding: '0' }}>
             <div className="users-table-container">
-              <table className="users-table" style={{ tableLayout: 'fixed' }}>
+              <table className="users-table daily-menus-table recurring-menus-table" style={{ tableLayout: 'fixed' }}>
                 <colgroup>
                   <col style={{ width: '20%' }} />
                   <col style={{ width: '50%' }} />
@@ -316,7 +328,7 @@ const DailyMenus = () => {
                   <tr>
                     <th>Día</th>
                     <th>Plantilla Configurada</th>
-                    <th style={{ textAlign: 'right' }}>Acciones</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -341,7 +353,7 @@ const DailyMenus = () => {
                             <span style={{ color: '#999', fontStyle: 'italic' }}>Sin configurar</span>
                           )}
                         </td>
-                        <td className="actions-cell" style={{ justifyContent: 'flex-end' }}>
+                        <td className="actions-cell">
                           <button
                             onClick={() => handleCreateRecurring(day.value)}
                             className={config ? 'btn-icon btn-edit' : 'btn-icon'}
@@ -385,7 +397,7 @@ const DailyMenus = () => {
             {/* Overrides Table */}
             <div className="card" style={{ padding: '0' }}>
               <div className="users-table-container">
-                    <table className="users-table" style={{ tableLayout: 'fixed' }}>
+                    <table className="users-table daily-menus-table specific-dates-table" style={{ tableLayout: 'fixed' }}>
                       <colgroup>
                         <col style={{ width: '22%' }} />
                         <col style={{ width: '16%' }} />
@@ -397,7 +409,7 @@ const DailyMenus = () => {
                           <th>Fecha</th>
                           <th>Día</th>
                           <th>Plantilla</th>
-                          <th style={{ textAlign: 'right' }}>Acciones</th>
+                          <th>Acciones</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -421,7 +433,7 @@ const DailyMenus = () => {
                                   {override.templateName}
                                 </span>
                               </td>
-                              <td className="actions-cell" style={{ justifyContent: 'flex-end' }}>
+                              <td className="actions-cell">
                                 <button
                                   onClick={() => handleEditOverride(override)}
                                   className="btn-icon btn-edit"

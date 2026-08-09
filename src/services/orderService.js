@@ -42,6 +42,10 @@ export const orderService = {
     return response;
   },
 
+  getActiveDeliveryOrders: async () => {
+    return api.get(ORDERS.DELIVERY_ACTIVE);
+  },
+
   // Obtener pedidos para cocina
   getOrdersForKitchen: async () => {
     const response = await api.get(ORDERS.KITCHEN);

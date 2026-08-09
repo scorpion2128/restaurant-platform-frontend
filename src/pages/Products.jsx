@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { USER_ROLES, hasRole } from '../constants'
 import Layout from '../components/Layout/Layout'
 import { useToast, ToastContainer } from '../components/Toast/Toast'
+import { useConfirmDialog } from '../components/ConfirmDialog/ConfirmDialog'
 import productService from '../services/productService'
 import productCategoryService from '../services/productCategoryService'
 import '../pages/Users.css'
@@ -12,6 +13,7 @@ const Products = () => {
   const { user: currentUser } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
+  const confirm = useConfirmDialog()
 
   useEffect(() => {
     if (currentUser && !hasRole(currentUser, USER_ROLES.ADMIN)) {
@@ -41,7 +43,8 @@ const Products = () => {
     code: '',
     categoryId: '',
     price: '',
-    active: true
+    active: true,
+    deliveryPackaging: false
   })
 
   const loadCategories = async () => {
@@ -109,7 +112,8 @@ const Products = () => {
       code: '',
       categoryId: '',
       price: '',
-      active: true
+      active: true,
+      deliveryPackaging: false
     })
     setShowModal(true)
   }
@@ -124,13 +128,19 @@ const Products = () => {
       code: product.code || '',
       categoryId: product.categoryId,
       price: product.price.toString(),
-      active: product.active
+      active: product.active,
+      deliveryPackaging: Boolean(product.deliveryPackaging)
     })
     setShowModal(true)
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Estás seguro de eliminar este producto?')) {
+    const confirmed = await confirm({
+      title: 'Eliminar producto',
+      message: '¿Estás seguro de eliminar este producto? Esta acción no se puede deshacer.',
+      confirmLabel: 'Eliminar'
+    })
+    if (!confirmed) {
       return
     }
     
@@ -185,7 +195,8 @@ const Products = () => {
         code: formData.code || null,
         categoryId: parseInt(formData.categoryId),
         price: parseFloat(formData.price),
-        active: formData.active
+        active: formData.active,
+        deliveryPackaging: formData.deliveryPackaging
       }
 
       if (modalMode === 'create') {
@@ -208,7 +219,7 @@ const Products = () => {
   if (loading && products.length === 0) {
     return (
       <Layout>
-        <div className="users-page">
+        <div className="users-page products-page">
           <div className="loading-state">
             <div className="spinner"></div>
             <p>Cargando productos...</p>
@@ -220,7 +231,7 @@ const Products = () => {
 
   return (
     <Layout>
-      <div className="users-page">
+      <div className="users-page products-page">
         <ToastContainer toasts={toast.toasts} removeToast={toast.removeToast} />
         
         <div className="users-header">
@@ -366,14 +377,7 @@ const Products = () => {
                 {filteredProducts.map(product => (
                   <tr key={product.id}>
                     <td>
-                      <div>
-                        <strong>{product.name}</strong>
-                        {product.description && (
-                          <div style={{ fontSize: '0.85em', color: '#666', marginTop: '2px' }}>
-                            {product.description.substring(0, 50)}{product.description.length > 50 ? '...' : ''}
-                          </div>
-                        )}
-                      </div>
+                      <strong>{product.name}</strong>
                     </td>
                     <td>
                       <div>
@@ -479,51 +483,23 @@ const Products = () => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="description">Descripción</label>
-                  <textarea
-                    id="description"
-                    className="input"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  <label htmlFor="categoryId">Categoría <span className="required">*</span></label>
+                  <select
+                    id="categoryId"
+                    className={`input select-input ${fieldErrors.categoryId ? 'input-error' : ''}`}
+                    value={formData.categoryId}
+                    onChange={(e) => {
+                      setFormData({ ...formData, categoryId: e.target.value })
+                      if (fieldErrors.categoryId) setFieldErrors(prev => ({ ...prev, categoryId: '' }))
+                    }}
                     disabled={submitting}
-                    placeholder="Descripción del plato..."
-                    rows="3"
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="categoryId">Categoría <span className="required">*</span></label>
-                    <select
-                      id="categoryId"
-                      className={`input select-input ${fieldErrors.categoryId ? 'input-error' : ''}`}
-                      value={formData.categoryId}
-                      onChange={(e) => {
-                        setFormData({ ...formData, categoryId: e.target.value })
-                        if (fieldErrors.categoryId) setFieldErrors(prev => ({ ...prev, categoryId: '' }))
-                      }}
-                      disabled={submitting}
-                    >
-                      <option value="">Selecciona una categoría...</option>
-                      {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
-                    {fieldErrors.categoryId && <div className="field-error-text">{fieldErrors.categoryId}</div>}
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="code">Código</label>
-                    <input
-                      id="code"
-                      type="text"
-                      className="input"
-                      value={formData.code}
-                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      disabled={submitting}
-                      placeholder="Ej: P001"
-                    />
-                  </div>
+                  >
+                    <option value="">Selecciona una categoría...</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                  {fieldErrors.categoryId && <div className="field-error-text">{fieldErrors.categoryId}</div>}
                 </div>
 
                 <div className="form-row">
@@ -558,6 +534,19 @@ const Products = () => {
                     </select>
                   </div>
                 </div>
+
+                <label className="delivery-packaging-option">
+                  <input
+                    type="checkbox"
+                    checked={formData.deliveryPackaging}
+                    onChange={(e) => setFormData({ ...formData, deliveryPackaging: e.target.checked })}
+                    disabled={submitting}
+                  />
+                  <span>
+                    <strong>Aplicar empaque en delivery</strong>
+                    <small>Agrega S/ 1.00 por cada unidad de este producto en pedidos a domicilio.</small>
+                  </span>
+                </label>
 
                 <div className="required-legend">
                   <span className="required">*</span> Campos obligatorios

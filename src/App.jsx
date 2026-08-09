@@ -13,12 +13,14 @@ import OrderTaking from './pages/OrderTaking'
 import KitchenDashboard from './pages/KitchenDashboard'
 import OrdersMonitor from './pages/OrdersMonitor'
 import ProtectedRoute from './components/ProtectedRoute'
+import { ConfirmDialogProvider } from './components/ConfirmDialog/ConfirmDialog'
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
+      <ConfirmDialogProvider>
+        <Router>
+          <Routes>
           <Route path="/login" element={<Login />} />
           <Route 
             path="/dashboard" 
@@ -102,8 +104,9 @@ function App() {
           />
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </Router>
+          </Routes>
+        </Router>
+      </ConfirmDialogProvider>
     </AuthProvider>
   )
 }

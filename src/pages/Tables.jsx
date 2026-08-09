@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { USER_ROLES, hasRole } from '../constants';
 import Layout from '../components/Layout/Layout';
 import { useToast, ToastContainer } from '../components/Toast/Toast';
+import { useConfirmDialog } from '../components/ConfirmDialog/ConfirmDialog';
 import { tableService } from '../services/tableService';
 import './Users.css';
 
@@ -11,6 +12,7 @@ const Tables = () => {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
+  const confirm = useConfirmDialog();
 
   // Redirect if not ADMIN
   useEffect(() => {
@@ -156,7 +158,12 @@ const Tables = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('¿Estás seguro de eliminar esta mesa?')) {
+    const confirmed = await confirm({
+      title: 'Eliminar mesa',
+      message: '¿Estás seguro de eliminar esta mesa? Esta acción no se puede deshacer.',
+      confirmLabel: 'Eliminar'
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -200,13 +207,15 @@ const Tables = () => {
               Administra las mesas del restaurante
             </p>
           </div>
-          <button className="btn-primary" onClick={handleCreate}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Nueva Mesa
-          </button>
+          <div className="users-header-actions">
+            <button className="btn-action" onClick={handleCreate}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Nueva Mesa
+            </button>
+          </div>
         </div>
 
         <div className="users-filters card">
@@ -322,7 +331,7 @@ const Tables = () => {
                     : 'Comienza creando tu primera mesa'}
                 </p>
                 {!searchTerm && filterStatus === 'all' && (
-                  <button className="btn-primary" onClick={handleCreate}>
+                  <button className="btn-action" onClick={handleCreate}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <line x1="12" y1="5" x2="12" y2="19" />
                       <line x1="5" y1="12" x2="19" y2="12" />
@@ -339,13 +348,16 @@ const Tables = () => {
           <div className="modal-overlay" onClick={handleCloseModal}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h3>{modalMode === 'create' ? 'Nueva Mesa' : 'Editar Mesa'}</h3>
+                <h2>{modalMode === 'create' ? 'Nueva Mesa' : 'Editar Mesa'}</h2>
                 <button className="modal-close" onClick={handleCloseModal}>
-                  ×
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit}>
+              <form className="modal-form" onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label htmlFor="number">
                     Número de Mesa <span className="required">*</span>
@@ -360,7 +372,7 @@ const Tables = () => {
                     min="1"
                     required
                     disabled={modalMode === 'edit'}
-                    className={fieldErrors.number ? 'error' : ''}
+                    className={`input ${fieldErrors.number ? 'input-error' : ''}`}
                   />
                   {modalMode === 'edit' && (
                     <small className="form-hint">El número de mesa no se puede cambiar</small>
@@ -384,7 +396,7 @@ const Tables = () => {
                     min="1"
                     max="20"
                     required
-                    className={fieldErrors.capacity ? 'error' : ''}
+                    className={`input ${fieldErrors.capacity ? 'input-error' : ''}`}
                   />
                   <small className="form-hint">Número máximo de personas</small>
                   {fieldErrors.capacity && (
@@ -402,6 +414,7 @@ const Tables = () => {
                     value={formData.status}
                     onChange={handleInputChange}
                     required
+                    className="input select-input"
                   >
                     <option value="AVAILABLE">Disponible</option>
                     <option value="OCCUPIED">Ocupada</option>
@@ -410,10 +423,14 @@ const Tables = () => {
                   </select>
                 </div>
 
-                <div className="modal-footer">
+                <div className="required-legend">
+                  <span className="required">*</span> Campos obligatorios
+                </div>
+
+                <div className="modal-actions">
                   <button
                     type="button"
-                    className="btn-secondary"
+                    className="btn btn-cancel"
                     onClick={handleCloseModal}
                     disabled={submitting}
                   >
@@ -421,7 +438,7 @@ const Tables = () => {
                   </button>
                   <button
                     type="submit"
-                    className="btn-primary"
+                    className="btn btn-primary"
                     disabled={submitting}
                   >
                     {submitting ? (
