@@ -8,6 +8,7 @@ const MENU_TEMPLATES_PATH = '/master-menu-templates'
 export const MENU_TEMPLATES = {
   BASE: MENU_TEMPLATES_PATH,
   BY_ID: (id) => `${MENU_TEMPLATES_PATH}/${id}`,
+  DUPLICATE: (id) => `${MENU_TEMPLATES_PATH}/${id}/duplicate`,
   ITEMS: (id) => `${MENU_TEMPLATES_PATH}/${id}/items`,
   REMOVE_ITEM: (templateId, itemId) => `${MENU_TEMPLATES_PATH}/${templateId}/items/${itemId}`,
   SECTIONS: (templateId) => `${MENU_TEMPLATES_PATH}/${templateId}/sections`,

@@ -18,6 +18,13 @@ const PreReceiptPrint = ({ account, onClose }) => {
     window.print();
   };
 
+  const getServiceLocation = () => account.tableName?.startsWith('Delivery') ? 'Delivery' : account.tableName;
+  const getWaiterName = () => account.waiter.fullName
+    ?.replace(/\s*[.,;:-]+\s*$/, '')
+    .trim()
+    .split(/\s+/)[0];
+  const orderNumbers = account.orders.map(order => order.orderNumber).join(', ');
+
   // Agrupar items por menú y sección
   const groupItemsByMenuAndSection = (items) => {
     const groups = [];
@@ -74,18 +81,22 @@ const PreReceiptPrint = ({ account, onClose }) => {
             </div>
 
             {/* Info básica */}
-            <div className="receipt-section">
+            <div className="receipt-section receipt-meta">
+              <div className="receipt-row">
+                <span>{account.orders.length > 1 ? 'Órdenes:' : 'Orden:'}</span>
+                <span>{orderNumbers}</span>
+              </div>
               <div className="receipt-row">
                 <span>Fecha:</span>
                 <span>{new Date().toLocaleString('es-PE')}</span>
               </div>
               <div className="receipt-row">
                 <span>Mesa:</span>
-                <span>{account.tableName}</span>
+                <span>{getServiceLocation()}</span>
               </div>
               <div className="receipt-row">
                 <span>Mesero:</span>
-                <span>{account.waiter.fullName}</span>
+                <span>{getWaiterName()}</span>
               </div>
             </div>
 
@@ -93,18 +104,10 @@ const PreReceiptPrint = ({ account, onClose }) => {
 
             {/* Detalle de órdenes */}
             <div className="receipt-section">
-              <h3>DETALLE:</h3>
               {account.orders.map((order) => {
                 const groups = groupItemsByMenuAndSection(order.items);
                 return (
                   <div key={order.orderId} className="receipt-order">
-                    <div className="receipt-order-header">
-                      Orden: {order.orderNumber}
-                    </div>
-                    {order.packagingTotal > 0 && (
-                      <div className="receipt-item"><span>{order.packagingUnits}x Empaque delivery</span><span>S/ {order.packagingTotal.toFixed(2)}</span></div>
-                    )}
-                    
                     {groups.map((group, groupIdx) => (
                       <div key={groupIdx} className="receipt-group">
                         {group.type === 'menu' ? (
@@ -113,9 +116,12 @@ const PreReceiptPrint = ({ account, onClose }) => {
                             {group.items.map((item, idx) => (
                               <div key={idx} className="receipt-item">
                                 <div className="item-line">
-                                  <span>{item.quantity}x {item.productName}</span>
-                                  {item.unitPrice > 0 && (
-                                    <span>S/ {item.subtotal.toFixed(2)}</span>
+                                  <span className="item-line-qty">{item.quantity}</span>
+                                  <span className="item-line-name">{item.productName}</span>
+                                  {idx === 0 && (
+                                    <span className="item-line-price">
+                                      {group.items.reduce((total, menuItem) => total + Number(menuItem.subtotal || 0), 0).toFixed(2)}
+                                    </span>
                                   )}
                                 </div>
                               </div>
@@ -127,8 +133,9 @@ const PreReceiptPrint = ({ account, onClose }) => {
                             {group.items.map((item, idx) => (
                               <div key={idx} className="receipt-item">
                                 <div className="item-line">
-                                  <span>{item.quantity}x {item.productName}</span>
-                                  <span>S/ {item.subtotal.toFixed(2)}</span>
+                                  <span className="item-line-qty">{item.quantity}</span>
+                                  <span className="item-line-name">{item.productName}</span>
+                                  <span className="item-line-price">{item.subtotal.toFixed(2)}</span>
                                 </div>
                               </div>
                             ))}
@@ -136,6 +143,15 @@ const PreReceiptPrint = ({ account, onClose }) => {
                         )}
                       </div>
                     ))}
+                    {order.packagingTotal > 0 && (
+                      <div className="receipt-item packaging-receipt-item">
+                        <div className="item-line">
+                          <span className="item-line-qty">{order.packagingUnits}</span>
+                          <span className="item-line-name">Empaque delivery</span>
+                          <span className="item-line-price">{order.packagingTotal.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -144,14 +160,14 @@ const PreReceiptPrint = ({ account, onClose }) => {
             <div className="receipt-divider"></div>
 
             {/* Totales */}
-            <div className="receipt-section">
+            <div className="receipt-section receipt-totals">
               <div className="receipt-row">
                 <span>Subtotal:</span>
-                <span>S/ {account.subtotal.toFixed(2)}</span>
+                <span>{account.subtotal.toFixed(2)}</span>
               </div>
               <div className="receipt-row">
                 <span>IGV (18%):</span>
-                <span>S/ {account.igvAmount.toFixed(2)}</span>
+                <span>{account.igvAmount.toFixed(2)}</span>
               </div>
               <div className="receipt-divider-bold"></div>
               <div className="receipt-row receipt-total">

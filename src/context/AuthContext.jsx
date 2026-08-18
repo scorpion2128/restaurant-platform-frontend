@@ -5,6 +5,24 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 
 const AuthContext = createContext(null)
 
+const buildUserFromToken = (token) => {
+  const decoded = jwtDecode(token)
+  return {
+    decoded,
+    user: {
+      userId: decoded.userId,
+      username: decoded.username,
+      firstName: decoded.firstName,
+      lastName: decoded.lastName,
+      organizationId: decoded.organizationId,
+      organizationName: decoded.organizationName,
+      activeRestaurantId: decoded.activeRestaurantId,
+      activeRestaurantRole: decoded.activeRestaurantRole,
+      restaurantAccess: decoded.restaurantAccess || []
+    }
+  }
+}
+
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (!context) {
@@ -19,23 +37,20 @@ export const AuthProvider = ({ children }) => {
   const [availableRestaurants, setAvailableRestaurants] = useState([])
 
   useEffect(() => {
+    document.title = user?.organizationName
+      ? `${user.organizationName} - Sistema de Gestión`
+      : 'Sistema de Gestión de Restaurantes'
+  }, [user?.organizationName])
+
+  useEffect(() => {
     // Verificar si hay un token guardado al cargar la aplicación
     const token = localStorage.getItem('accessToken')
     if (token) {
       try {
-        const decoded = jwtDecode(token)
+        const { decoded, user: tokenUser } = buildUserFromToken(token)
         // Verificar si el token no ha expirado
         if (decoded.exp * 1000 > Date.now()) {
-          setUser({
-            userId: decoded.userId,
-            username: decoded.username,
-            firstName: decoded.firstName,
-            lastName: decoded.lastName,
-            organizationId: decoded.organizationId,
-            activeRestaurantId: decoded.activeRestaurantId,
-            activeRestaurantRole: decoded.activeRestaurantRole,
-            restaurantAccess: decoded.restaurantAccess || []
-          })
+          setUser(tokenUser)
           setAvailableRestaurants(decoded.restaurantAccess || [])
         } else {
           localStorage.removeItem('accessToken')
@@ -70,11 +85,13 @@ export const AuthProvider = ({ children }) => {
         // Si no hay restaurant activo, significa que el usuario tiene múltiples restaurants
         // y debe seleccionar uno
         if (!data.activeRestaurant) {
+          const { user: tokenUser } = buildUserFromToken(data.accessToken)
           return {
             success: true,
             requiresRestaurantSelection: true,
             availableRestaurants: data.availableRestaurants,
-            tempToken: data.accessToken
+            tempToken: data.accessToken,
+            organizationName: tokenUser.organizationName
           }
         }
         
@@ -82,20 +99,11 @@ export const AuthProvider = ({ children }) => {
         const token = data.accessToken
         localStorage.setItem('accessToken', token)
         
-        const decoded = jwtDecode(token)
-        setUser({
-          userId: decoded.userId,
-          username: decoded.username,
-          firstName: decoded.firstName,
-          lastName: decoded.lastName,
-          organizationId: decoded.organizationId,
-          activeRestaurantId: decoded.activeRestaurantId,
-          activeRestaurantRole: decoded.activeRestaurantRole,
-          restaurantAccess: decoded.restaurantAccess || []
-        })
+        const { decoded, user: tokenUser } = buildUserFromToken(token)
+        setUser(tokenUser)
         setAvailableRestaurants(decoded.restaurantAccess || [])
         
-        return { success: true }
+        return { success: true, user: tokenUser }
       } else {
         throw new Error('Respuesta inválida del servidor')
       }
@@ -126,20 +134,11 @@ export const AuthProvider = ({ children }) => {
         const token = result.data.accessToken
         localStorage.setItem('accessToken', token)
         
-        const decoded = jwtDecode(token)
-        setUser({
-          userId: decoded.userId,
-          username: decoded.username,
-          firstName: decoded.firstName,
-          lastName: decoded.lastName,
-          organizationId: decoded.organizationId,
-          activeRestaurantId: decoded.activeRestaurantId,
-          activeRestaurantRole: decoded.activeRestaurantRole,
-          restaurantAccess: decoded.restaurantAccess || []
-        })
+        const { decoded, user: tokenUser } = buildUserFromToken(token)
+        setUser(tokenUser)
         setAvailableRestaurants(decoded.restaurantAccess || [])
         
-        return { success: true }
+        return { success: true, user: tokenUser }
       } else {
         throw new Error('Respuesta inválida del servidor')
       }
@@ -171,17 +170,8 @@ export const AuthProvider = ({ children }) => {
         const newToken = result.data.accessToken
         localStorage.setItem('accessToken', newToken)
         
-        const decoded = jwtDecode(newToken)
-        setUser({
-          userId: decoded.userId,
-          username: decoded.username,
-          firstName: decoded.firstName,
-          lastName: decoded.lastName,
-          organizationId: decoded.organizationId,
-          activeRestaurantId: decoded.activeRestaurantId,
-          activeRestaurantRole: decoded.activeRestaurantRole,
-          restaurantAccess: decoded.restaurantAccess || []
-        })
+        const { user: tokenUser } = buildUserFromToken(newToken)
+        setUser(tokenUser)
         
         // Recargar la página para que todos los componentes se actualicen
         window.location.reload()

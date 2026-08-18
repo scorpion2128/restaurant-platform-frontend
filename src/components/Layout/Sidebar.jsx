@@ -33,6 +33,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         </svg>
       ),
       path: '/dashboard',
+      disabled: true,
       roles: [USER_ROLES.ADMIN]
     },
     {
@@ -90,6 +91,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         </svg>
       ),
       path: '/orders/monitor',
+      disabled: true,
       roles: [USER_ROLES.ADMIN]
     },
     {
@@ -150,11 +152,21 @@ const Sidebar = ({ isOpen, onClose }) => {
     <>
       <aside className={`sidebar ${isOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
         <nav className="sidebar-nav">
-          {filteredMenuItems.map((item) => (
+          {filteredMenuItems.map((item) => item.disabled ? (
+            <div
+              key={item.path}
+              className="nav-item nav-item-disabled"
+              aria-disabled="true"
+              title="Próximamente"
+            >
+              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-text">{item.title}</span>
+            </div>
+          ) : (
             <NavLink
               key={item.path}
               to={item.path}
-              className={({ isActive }) => 
+              className={({ isActive }) =>
                 `nav-item ${isActive ? 'nav-item-active' : ''}`
               }
               onClick={onClose}

@@ -77,11 +77,11 @@
 }
 
 .stat-change.positive {
-  color: #10b981;
+  color: var(--status-ready);
 }
 
 .stat-change.negative {
-  color: #ef4444;
+  color: var(--status-danger);
 }
 
 .stat-change.neutral {
@@ -186,18 +186,18 @@
 }
 
 .status-ready {
-  background-color: #d1fae5;
-  color: #065f46;
+  background-color: var(--status-ready-bg);
+  color: var(--status-ready);
 }
 
 .status-processing {
-  background-color: #dbeafe;
-  color: #1e40af;
+  background-color: var(--status-preparing-bg);
+  color: var(--status-preparing);
 }
 
 .status-paid {
-  background-color: #e0e7ff;
-  color: #4338ca;
+  background-color: var(--secondary-light);
+  color: var(--secondary);
 }
 
 .order-amount {
@@ -233,7 +233,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  background: var(--primary);
   color: var(--text-white);
   display: flex;
   align-items: center;

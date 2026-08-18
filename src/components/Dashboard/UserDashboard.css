@@ -91,15 +91,15 @@
 }
 
 .priority-high {
-  background-color: #ef4444;
+  background-color: var(--status-danger);
 }
 
 .priority-medium {
-  background-color: #f59e0b;
+  background-color: var(--status-pending);
 }
 
 .priority-low {
-  background-color: #10b981;
+  background-color: var(--status-ready);
 }
 
 .task-info {
@@ -186,18 +186,18 @@
 }
 
 .table-status-ordering {
-  background-color: #dbeafe;
-  color: #1e40af;
+  background-color: var(--status-preparing-bg);
+  color: var(--status-preparing);
 }
 
 .table-status-eating {
-  background-color: #d1fae5;
-  color: #065f46;
+  background-color: var(--status-ready-bg);
+  color: var(--status-ready);
 }
 
 .table-status-paying {
-  background-color: #fed7aa;
-  color: #ea580c;
+  background-color: var(--primary-border);
+  color: var(--primary-dark);
 }
 
 .table-details {

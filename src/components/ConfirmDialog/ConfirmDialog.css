@@ -54,13 +54,13 @@
   margin-bottom: 1.25rem;
   place-items: center;
   border-radius: 0.875rem;
-  background: #fff7ed;
+  background: var(--primary-soft);
   color: var(--primary);
 }
 
 .confirm-dialog--danger .confirm-dialog-icon {
-  background: #fef2f2;
-  color: #dc2626;
+  background: var(--status-danger-bg);
+  color: var(--status-danger);
 }
 
 .confirm-dialog-icon svg {
@@ -108,13 +108,13 @@
 }
 
 .confirm-dialog-cancel {
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-strong);
   background: #fff;
   color: var(--text-secondary);
 }
 
 .confirm-dialog-cancel:hover {
-  border-color: #94a3b8;
+  border-color: var(--text-light);
   background: var(--bg-secondary);
 }
 
@@ -125,8 +125,8 @@
 }
 
 .confirm-dialog--danger .confirm-dialog-confirm {
-  border-color: #dc2626;
-  background: #dc2626;
+  border-color: var(--status-danger);
+  background: var(--status-danger);
 }
 
 .confirm-dialog-confirm:hover {
@@ -135,8 +135,8 @@
 }
 
 .confirm-dialog--danger .confirm-dialog-confirm:hover {
-  border-color: #b91c1c;
-  background: #b91c1c;
+  border-color: var(--status-danger);
+  background: var(--status-danger);
 }
 
 .confirm-dialog-actions button:focus-visible,

@@ -55,7 +55,7 @@ const Header = ({ toggleSidebar }) => {
               <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
           </div>
-          <span className="logo-text">Restaurant Manager</span>
+          <span className="logo-text">{user?.organizationName || 'Gestión de Restaurantes'}</span>
         </div>
       </div>
 
@@ -81,14 +81,14 @@ const Header = ({ toggleSidebar }) => {
 
           {showDropdown && (
             <div className="user-dropdown">
-              <button className="dropdown-item">
+              <button className="dropdown-item dropdown-item-disabled" disabled title="Próximamente">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
                 <span>Mi Perfil</span>
               </button>
-              <button className="dropdown-item">
+              <button className="dropdown-item dropdown-item-disabled" disabled title="Próximamente">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="3" />
                   <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m6.36 6.36l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m6.36-6.36l4.24-4.24" />

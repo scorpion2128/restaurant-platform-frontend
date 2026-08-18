@@ -5,6 +5,7 @@ import { USER_ROLES, hasRole } from '../constants'
 import Layout from '../components/Layout/Layout'
 import { useToast, ToastContainer } from '../components/Toast/Toast'
 import { useConfirmDialog } from '../components/ConfirmDialog/ConfirmDialog'
+import SortableItemList from '../components/SortableItemList/SortableItemList'
 import menuTemplateService from '../services/menuTemplateService'
 import menuSectionService from '../services/menuSectionService'
 import productService from '../services/productService'
@@ -44,6 +45,8 @@ const MenuTemplates = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [submitting, setSubmitting] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
+  const [pendingItemOrders, setPendingItemOrders] = useState({})
+  const [savingOrderKey, setSavingOrderKey] = useState(null)
 
   const [formData, setFormData] = useState({
     name: ''
@@ -154,6 +157,14 @@ const MenuTemplates = () => {
     setShowModal(true)
   }
 
+  const handleDuplicate = (template) => {
+    setModalMode('duplicate')
+    setSelectedTemplate(template)
+    setFieldErrors({})
+    setFormData({ name: `${template.name} - Copia` })
+    setShowModal(true)
+  }
+
   const handleManageSections = async (template) => {
     setSelectedTemplate(template)
     await loadSections(template.id)
@@ -212,7 +223,9 @@ const MenuTemplates = () => {
     const hasItems = template.items && template.items.length > 0
     
     if (hasItems) {
-      template.items.forEach(item => {
+      [...template.items]
+        .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || a.id - b.id)
+        .forEach(item => {
         // Solo cargar items que tienen sección (eliminar "Sin sección")
         if (item.sectionId) {
           const sectionKey = String(item.sectionId)
@@ -221,7 +234,7 @@ const MenuTemplates = () => {
           }
           productsBySection[sectionKey].push(item.masterProductId)
         }
-      })
+        })
     }
     
     // Seleccionar la primera sección si existe
@@ -305,6 +318,11 @@ const MenuTemplates = () => {
           name: formData.name
         })
         toast.success('Plantilla creada correctamente')
+      } else if (modalMode === 'duplicate') {
+        await menuTemplateService.duplicateTemplate(selectedTemplate.id, {
+          name: formData.name
+        })
+        toast.success('Plantilla duplicada correctamente')
       } else {
         await menuTemplateService.updateTemplate(selectedTemplate.id, {
           name: formData.name
@@ -340,14 +358,12 @@ const MenuTemplates = () => {
       
       // Convertir productsBySection a la estructura que espera el backend
       const items = []
-      let globalOrder = 0
-      
       Object.entries(itemsFormData.productsBySection).forEach(([sectionId, productIds]) => {
-        productIds.forEach(productId => {
+        productIds.forEach((productId, displayOrder) => {
           items.push({
             masterProductId: productId,
             sectionId: parseInt(sectionId), // Siempre será un número, ya no hay 'null'
-            displayOrder: globalOrder++
+            displayOrder
           })
         })
       })
@@ -440,6 +456,48 @@ const MenuTemplates = () => {
     })
   }
 
+  const getOrderKey = (templateId, sectionId) => `${templateId}-${sectionId}`
+
+  const getOrderedItems = (templateId, sectionId, items) => {
+    const pendingOrder = pendingItemOrders[getOrderKey(templateId, sectionId)]
+    if (!pendingOrder) {
+      return [...items].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || a.id - b.id)
+    }
+    const positionById = new Map(pendingOrder.map((id, index) => [id, index]))
+    return [...items].sort((a, b) => positionById.get(a.id) - positionById.get(b.id))
+  }
+
+  const handlePreviewItemsReorder = (templateId, sectionId, orderedItems) => {
+    setPendingItemOrders(prev => ({
+      ...prev,
+      [getOrderKey(templateId, sectionId)]: orderedItems.map(item => item.id)
+    }))
+  }
+
+  const handleSaveItemOrder = async (templateId, sectionId) => {
+    const orderKey = getOrderKey(templateId, sectionId)
+    const orderedItemIds = pendingItemOrders[orderKey]
+    if (!orderedItemIds) return
+
+    try {
+      setSavingOrderKey(orderKey)
+      const response = await menuTemplateService.reorderItems(templateId, sectionId, orderedItemIds)
+      if (response.success && response.data) {
+        setTemplates(prev => prev.map(template => template.id === templateId ? response.data : template))
+      }
+      setPendingItemOrders(prev => {
+        const next = { ...prev }
+        delete next[orderKey]
+        return next
+      })
+      toast.success('Orden guardado correctamente')
+    } catch (error) {
+      toast.error(error.message || 'No se pudo guardar el orden')
+    } finally {
+      setSavingOrderKey(null)
+    }
+  }
+
   const handleCategoryToggle = (categoryId) => {
     setItemsFormData(prev => {
       const isSelected = prev.selectedCategories.includes(categoryId)
@@ -472,19 +530,6 @@ const MenuTemplates = () => {
         selectedCategories: Array.from(categoryIds)
       }
     })
-  }
-
-  if (loading && templates.length === 0) {
-    return (
-      <Layout>
-        <div className="users-page menu-templates-page">
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Cargando plantillas...</p>
-          </div>
-        </div>
-      </Layout>
-    )
   }
 
   return (
@@ -582,14 +627,13 @@ const MenuTemplates = () => {
           </div>
         </div>
 
-        <div className="users-table-container card">
-          {loading ? (
+        <div className="users-table-container card" aria-busy={loading}>
+          {loading && (
             <div className="loading-overlay">
               <div className="spinner"></div>
             </div>
-          ) : (
-            <>
-              {filteredTemplates.map(template => (
+          )}
+          {filteredTemplates.map(template => (
                 <div 
                   key={template.id} 
                   style={{ 
@@ -696,6 +740,25 @@ const MenuTemplates = () => {
                       </button>
 
                       <button
+                        className="btn-icon btn-edit"
+                        onClick={() => handleDuplicate(template)}
+                        title="Duplicar plantilla"
+                        aria-label={`Duplicar ${template.name}`}
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
+                          <rect x="8" y="8" width="12" height="12" rx="2" />
+                          <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                        </svg>
+                      </button>
+
+                      <button
                         className="btn-icon btn-deactivate"
                         onClick={() => handleDelete(template.id)}
                         title="Eliminar"
@@ -726,6 +789,7 @@ const MenuTemplates = () => {
                           if (item.sectionId) {
                             if (!itemsBySection[item.sectionId]) {
                               itemsBySection[item.sectionId] = {
+                                id: item.sectionId,
                                 name: item.sectionName,
                                 items: []
                               }
@@ -739,53 +803,48 @@ const MenuTemplates = () => {
                         return (
                           <>
                             {/* Productos por sección */}
-                            {Object.values(itemsBySection).map((section, idx) => (
-                              <div key={idx} style={{ 
+                            {Object.values(itemsBySection).map(section => {
+                              const orderKey = getOrderKey(template.id, section.id)
+                              const orderedItems = getOrderedItems(template.id, section.id, section.items)
+                              return (
+                              <div key={section.id} style={{
                                 marginBottom: '24px',
                                 border: '2px solid #e3f2fd',
                                 borderRadius: '8px',
                                 padding: '16px',
                                 backgroundColor: '#f5f9ff'
                               }}>
-                                <h4 style={{ 
-                                  margin: '0 0 12px 0', 
-                                  color: '#1976d2', 
-                                  fontSize: '1.05em',
-                                  fontWeight: '700',
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.8px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '8px',
-                                  borderBottom: '2px solid #2196F3',
-                                  paddingBottom: '8px'
-                                }}>
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '18px', height: '18px' }}>
-                                    <path d="M4 7h16M4 12h16M4 17h10" />
-                                  </svg>
-                                  {section.name}
-                                </h4>
-                                <table className="users-table template-items-table">
-                                  <tbody>
-                                    {section.items.map(item => (
-                                      <tr key={item.id}>
-                                        <td className="template-product-name">{item.productName}</td>
-                                        <td className="template-product-price">S/ {item.productPrice.toFixed(2)}</td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
+                                <div className="template-section-order-header">
+                                  <h4>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                      <path d="M4 7h16M4 12h16M4 17h10" />
+                                    </svg>
+                                    {section.name}
+                                  </h4>
+                                  {pendingItemOrders[orderKey] && (
+                                    <button
+                                      type="button"
+                                      className="btn btn-primary btn-save-item-order"
+                                      onClick={() => handleSaveItemOrder(template.id, section.id)}
+                                      disabled={savingOrderKey === orderKey}
+                                    >
+                                      {savingOrderKey === orderKey ? 'Guardando...' : 'Guardar orden'}
+                                    </button>
+                                  )}
+                                </div>
+                                <SortableItemList
+                                  items={orderedItems}
+                                  onReorder={items => handlePreviewItemsReorder(template.id, section.id, items)}
+                                />
                               </div>
-                            ))}
+                            )})}
                           </>
                         )
                       })()}
                     </div>
                   )}
                 </div>
-              ))}
-            </>
-          )}
+          ))}
 
           {filteredTemplates.length === 0 && !loading && (
             <div className="empty-state">
@@ -802,7 +861,7 @@ const MenuTemplates = () => {
           <div className="modal-overlay" onClick={() => !submitting && setShowModal(false)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>{modalMode === 'create' ? 'Crear Nueva Plantilla' : 'Editar Plantilla'}</h2>
+                <h2>{modalMode === 'create' ? 'Crear Nueva Plantilla' : modalMode === 'duplicate' ? 'Duplicar Plantilla' : 'Editar Plantilla'}</h2>
                 <button 
                   className="modal-close" 
                   onClick={() => setShowModal(false)}
@@ -833,6 +892,12 @@ const MenuTemplates = () => {
                   {fieldErrors.name && <div className="field-error-text">{fieldErrors.name}</div>}
                 </div>
 
+                {modalMode === 'duplicate' && (
+                  <p className="duplicate-template-note">
+                    Se copiarán las secciones, los productos y su orden. La nueva plantilla será independiente de la original.
+                  </p>
+                )}
+
                 <div className="required-legend">
                   <span className="required">*</span> Campos obligatorios
                 </div>
@@ -851,7 +916,7 @@ const MenuTemplates = () => {
                     className="btn btn-primary"
                     disabled={submitting}
                   >
-                    {submitting ? 'Guardando...' : modalMode === 'create' ? 'Crear Plantilla' : 'Guardar Cambios'}
+                    {submitting ? 'Guardando...' : modalMode === 'create' ? 'Crear Plantilla' : modalMode === 'duplicate' ? 'Duplicar Plantilla' : 'Guardar Cambios'}
                   </button>
                 </div>
               </form>

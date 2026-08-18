@@ -141,19 +141,6 @@ const ProductCategories = () => {
     }
   }
 
-  if (loading && categories.length === 0) {
-    return (
-      <Layout>
-        <div className="users-page product-categories-page">
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Cargando categorías...</p>
-          </div>
-        </div>
-      </Layout>
-    )
-  }
-
   return (
     <Layout>
       <div className="users-page product-categories-page">
@@ -250,13 +237,13 @@ const ProductCategories = () => {
           </div>
         </div>
 
-        <div className="users-table-container card">
-          {loading ? (
+        <div className="users-table-container card" aria-busy={loading}>
+          {loading && (
             <div className="loading-overlay">
               <div className="spinner"></div>
             </div>
-          ) : (
-            <table className="users-table">
+          )}
+          <table className="users-table">
               <thead>
                 <tr>
                   <th>Nombre</th>
@@ -292,8 +279,7 @@ const ProductCategories = () => {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          )}
+          </table>
 
           {filteredCategories.length === 0 && !loading && (
             <div className="empty-state">

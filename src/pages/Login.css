@@ -5,7 +5,7 @@
   justify-content: center;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--secondary);
 }
 
 .login-background {
@@ -79,7 +79,7 @@
   width: 80px;
   height: 80px;
   margin: 0 auto 1rem;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  background: var(--primary);
   border-radius: 1rem;
   display: flex;
   align-items: center;
@@ -137,10 +137,10 @@
 
 .error-message {
   padding: 1rem;
-  background-color: #fee2e2;
-  border: 1px solid #fecaca;
+  background-color: var(--status-danger-bg);
+  border: 1px solid var(--status-danger-bg);
   border-radius: 0.5rem;
-  color: #dc2626;
+  color: var(--status-danger);
   font-size: 0.875rem;
   display: flex;
   align-items: center;
@@ -266,7 +266,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  background: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;

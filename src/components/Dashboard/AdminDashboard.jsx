@@ -1,12 +1,4 @@
 const AdminDashboard = ({ user }) => {
-  // Obtener primer nombre y primer apellido
-  const getFirstNames = () => {
-    if (!user) return ''
-    const firstName = user.firstName.split(' ')[0]
-    const firstLastName = user.lastName.split(' ')[0]
-    return `${firstName} ${firstLastName}`
-  }
-
   const stats = [
     {
       title: 'Ventas del Día',
@@ -97,7 +89,7 @@ const AdminDashboard = ({ user }) => {
       <div className="dashboard-header">
         <div>
           <h1 className="dashboard-title">
-            Bienvenido, {getFirstNames()}
+            Bienvenido,
           </h1>
           <p className="dashboard-subtitle">
             Panel de control administrativo del restaurante

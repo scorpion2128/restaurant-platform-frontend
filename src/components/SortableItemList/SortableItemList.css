@@ -1,0 +1,82 @@
+.sortable-menu-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.sortable-menu-item {
+  display: grid;
+  grid-template-columns: 2rem 2.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 3.25rem;
+  padding: 0.35rem 0.75rem;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.sortable-menu-item:active {
+  cursor: grabbing;
+}
+
+.sortable-menu-item:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.sortable-menu-item.is-dragging {
+  z-index: 10;
+  border: 1px solid var(--primary);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-md);
+  opacity: 0.92;
+}
+
+.sortable-menu-order {
+  color: var(--text-secondary);
+  font-weight: 700;
+  text-align: center;
+}
+
+.sortable-menu-handle {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  pointer-events: none;
+}
+
+.sortable-menu-handle svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  fill: currentColor;
+}
+
+.sortable-menu-name {
+  min-width: 0;
+  padding-right: 1rem;
+  color: var(--text-primary);
+}
+
+.sortable-menu-price {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .sortable-menu-item {
+    grid-template-columns: 1.75rem 2.5rem minmax(0, 1fr);
+  }
+
+  .sortable-menu-price {
+    grid-column: 3;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+}

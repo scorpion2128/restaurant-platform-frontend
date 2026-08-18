@@ -243,22 +243,26 @@ const PaymentModal = ({ tableId, orderId, onClose, onPaymentComplete }) => {
                               {group.type === 'menu' ? (
                                 <>
                                   <div className="group-label">MENÚ</div>
-                                  {group.items.map((item, idx) => (
-                                    <div key={idx} className="order-item-row">
-                                      <span className="item-qty">{item.quantity}x</span>
-                                      <span className="item-name">{item.productName}</span>
-                                      {item.unitPrice > 0 && (
-                                        <span className="item-price">S/ {item.subtotal.toFixed(2)}</span>
-                                      )}
+                                  <div className="menu-items-with-total">
+                                    <div>
+                                      {group.items.map((item, idx) => (
+                                        <div key={idx} className="order-item-row">
+                                          <span className="item-qty">{item.quantity}</span>
+                                          <span className="item-name">{item.productName}</span>
+                                        </div>
+                                      ))}
                                     </div>
-                                  ))}
+                                    <span className="item-price">
+                                      S/ {group.items.reduce((total, item) => total + Number(item.subtotal || 0), 0).toFixed(2)}
+                                    </span>
+                                  </div>
                                 </>
                               ) : (
                                 <>
                                   <div className="group-label">{group.sectionName.toUpperCase()}</div>
                                   {group.items.map((item, idx) => (
                                     <div key={idx} className="order-item-row">
-                                      <span className="item-qty">{item.quantity}x</span>
+                                      <span className="item-qty">{item.quantity}</span>
                                       <span className="item-name">{item.productName}</span>
                                       <span className="item-price">S/ {item.subtotal.toFixed(2)}</span>
                                     </div>
@@ -270,14 +274,11 @@ const PaymentModal = ({ tableId, orderId, onClose, onPaymentComplete }) => {
                         </div>
                         {order.packagingTotal > 0 && (
                           <div className="order-item-row packaging-charge-row">
-                            <span>{order.packagingUnits}x</span>
+                            <span className="item-qty">{order.packagingUnits}</span>
                             <span className="item-name">Empaque delivery</span>
                             <span className="item-price">S/ {order.packagingTotal.toFixed(2)}</span>
                           </div>
                         )}
-                        <div className="order-total">
-                          Total: <strong>S/ {order.total.toFixed(2)}</strong>
-                        </div>
                       </div>
                     );
                   })}
