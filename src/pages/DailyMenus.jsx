@@ -597,7 +597,7 @@ const DailyMenus = () => {
                     <option value="">Seleccionar plantilla...</option>
                     {templates.map(template => (
                       <option key={template.id} value={template.id}>
-                        {template.name} ({template.itemCount} productos)
+                        {template.name}
                       </option>
                     ))}
                   </select>

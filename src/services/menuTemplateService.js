@@ -35,6 +35,15 @@ const menuTemplateService = {
     }
   },
 
+  duplicateTemplate: async (id, data) => {
+    try {
+      return await api.post(MENU_TEMPLATES.DUPLICATE(id), data)
+    } catch (error) {
+      console.error('Error duplicating template:', error)
+      throw new Error(error.response?.data?.message || error.message || 'Error al duplicar plantilla')
+    }
+  },
+
   // Update template
   updateTemplate: async (id, data) => {
     try {
@@ -65,6 +74,18 @@ const menuTemplateService = {
     } catch (error) {
       console.error('Error adding items:', error)
       throw new Error(error.response?.data?.message || error.message || 'Error al agregar productos')
+    }
+  },
+
+  reorderItems: async (templateId, sectionId, orderedItemIds) => {
+    try {
+      return await api.put(
+        `/master-menu-templates/${templateId}/sections/${sectionId}/items/order`,
+        { orderedItemIds }
+      )
+    } catch (error) {
+      console.error('Error reordering template items:', error)
+      throw new Error(error.response?.data?.message || error.message || 'Error al ordenar productos')
     }
   },
 

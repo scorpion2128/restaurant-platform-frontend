@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { getDefaultRouteForRole } from '../constants'
 
 const Login = () => {
   const [username, setUsername] = useState('')
@@ -12,6 +13,7 @@ const Login = () => {
   const [showRestaurantSelection, setShowRestaurantSelection] = useState(false)
   const [availableRestaurants, setAvailableRestaurants] = useState([])
   const [tempToken, setTempToken] = useState(null)
+  const [organizationName, setOrganizationName] = useState('')
   const [selectedRestaurant, setSelectedRestaurant] = useState(null)
   const navigate = useNavigate()
   const { login, selectRestaurant } = useAuth()
@@ -49,11 +51,11 @@ const Login = () => {
         // Mostrar selector de restaurant
         setAvailableRestaurants(result.availableRestaurants)
         setTempToken(result.tempToken)
+        setOrganizationName(result.organizationName || '')
         setShowRestaurantSelection(true)
         setLoading(false)
       } else {
-        // Redirigir directamente al dashboard
-        navigate('/dashboard')
+        navigate(getDefaultRouteForRole(result.user?.activeRestaurantRole), { replace: true })
       }
     } else {
       setError(result.error || 'Credenciales incorrectas. Por favor, intente nuevamente.')
@@ -71,7 +73,7 @@ const Login = () => {
     const result = await selectRestaurant(selectedRestaurant, tempToken)
     
     if (result.success) {
-      navigate('/dashboard')
+      navigate(getDefaultRouteForRole(result.user?.activeRestaurantRole), { replace: true })
     } else {
       setError(result.error || 'Error al seleccionar restaurant')
       setLoading(false)
@@ -99,7 +101,7 @@ const Login = () => {
                 <polyline points="9 22 9 12 15 12 15 22" />
               </svg>
             </div>
-            <h1>Seleccionar Sede</h1>
+            <h1>{organizationName || 'Seleccionar Sede'}</h1>
             <p>Elige el restaurant donde deseas trabajar</p>
           </div>
 
@@ -183,7 +185,7 @@ const Login = () => {
               <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
           </div>
-          <h1>Restaurant Manager</h1>
+          <h1>Sabe Perú</h1>
           <p>Sistema de Gestión de Restaurantes</p>
         </div>
 
@@ -291,7 +293,7 @@ const Login = () => {
               </>
             ) : (
               <>
-                Iniciar Sesión
+                Iniciar sesión
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="5" y1="12" x2="19" y2="12" />
                   <polyline points="12 5 19 12 12 19" />

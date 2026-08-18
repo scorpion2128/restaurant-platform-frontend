@@ -19,6 +19,12 @@ export const ROLE_LABELS = {
   [USER_ROLES.KITCHEN]: 'Cocina'
 }
 
+export const getDefaultRouteForRole = (role) => ({
+  [USER_ROLES.ADMIN]: '/master-product-categories',
+  [USER_ROLES.WAITER]: '/orders/take',
+  [USER_ROLES.KITCHEN]: '/kitchen'
+}[role] || '/dashboard')
+
 /**
  * Get translated role label
  * @param {string} role - Role key

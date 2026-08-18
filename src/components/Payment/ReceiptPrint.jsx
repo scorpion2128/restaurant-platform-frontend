@@ -19,6 +19,13 @@ const ReceiptPrint = ({ receipt, onClose }) => {
     window.print();
   };
 
+  const getServiceLocation = () => payment.tableName?.startsWith('Delivery') ? 'Delivery' : payment.tableName;
+  const getWaiterName = () => payment.waiterName
+    ?.replace(/\s*[.,;:-]+\s*$/, '')
+    .trim()
+    .split(/\s+/)[0];
+  const orderNumbers = orders.map(order => order.orderNumber).join(', ');
+
   const getPaymentMethodLabel = (method) => {
     const labels = {
       'CASH': 'Efectivo',
@@ -109,18 +116,22 @@ const ReceiptPrint = ({ receipt, onClose }) => {
             <div className="receipt-divider"></div>
 
             {/* Info básica */}
-            <div className="receipt-section">
+            <div className="receipt-section receipt-meta">
+              <div className="receipt-row">
+                <span>{orders.length > 1 ? 'Órdenes:' : 'Orden:'}</span>
+                <span>{orderNumbers}</span>
+              </div>
               <div className="receipt-row">
                 <span>Fecha:</span>
                 <span>{new Date(payment.paidAt).toLocaleString('es-PE')}</span>
               </div>
               <div className="receipt-row">
                 <span>Mesa:</span>
-                <span>{payment.tableName}</span>
+                <span>{getServiceLocation()}</span>
               </div>
               <div className="receipt-row">
                 <span>Mesero:</span>
-                <span>{payment.waiterName}</span>
+                <span>{getWaiterName()}</span>
               </div>
             </div>
 
@@ -128,18 +139,10 @@ const ReceiptPrint = ({ receipt, onClose }) => {
 
             {/* Detalle de órdenes */}
             <div className="receipt-section">
-              <h3>DETALLE:</h3>
               {orders.map((order) => {
                 const groups = groupItemsByMenuAndSection(order.items);
                 return (
                   <div key={order.orderId} className="receipt-order">
-                    <div className="receipt-order-header">
-                      Orden: {order.orderNumber}
-                    </div>
-                    {order.packagingTotal > 0 && (
-                      <div className="receipt-item"><span>{order.packagingUnits}x Empaque delivery</span><span>S/ {order.packagingTotal.toFixed(2)}</span></div>
-                    )}
-                    
                     {groups.map((group, groupIdx) => (
                       <div key={groupIdx} className="receipt-group">
                         {group.type === 'menu' ? (
@@ -148,14 +151,14 @@ const ReceiptPrint = ({ receipt, onClose }) => {
                             {group.items.map((item, idx) => (
                               <div key={idx} className="receipt-item">
                                 <div className="item-line">
-                                  <span>{item.quantity}x {item.productName}</span>
-                                  {item.unitPrice > 0 && (
-                                    <span>S/ {item.subtotal.toFixed(2)}</span>
+                                  <span className="item-line-qty">{item.quantity}</span>
+                                  <span className="item-line-name">{item.productName}</span>
+                                  {idx === 0 && (
+                                    <span className="item-line-price">
+                                      {group.items.reduce((total, menuItem) => total + Number(menuItem.subtotal || 0), 0).toFixed(2)}
+                                    </span>
                                   )}
                                 </div>
-                                {item.notes && (
-                                  <div className="item-notes">Nota: {item.notes}</div>
-                                )}
                               </div>
                             ))}
                           </>
@@ -165,18 +168,25 @@ const ReceiptPrint = ({ receipt, onClose }) => {
                             {group.items.map((item, idx) => (
                               <div key={idx} className="receipt-item">
                                 <div className="item-line">
-                                  <span>{item.quantity}x {item.productName}</span>
-                                  <span>S/ {item.subtotal.toFixed(2)}</span>
+                                  <span className="item-line-qty">{item.quantity}</span>
+                                  <span className="item-line-name">{item.productName}</span>
+                                  <span className="item-line-price">{item.subtotal.toFixed(2)}</span>
                                 </div>
-                                {item.notes && (
-                                  <div className="item-notes">Nota: {item.notes}</div>
-                                )}
                               </div>
                             ))}
                           </>
                         )}
                       </div>
                     ))}
+                    {order.packagingTotal > 0 && (
+                      <div className="receipt-item packaging-receipt-item">
+                        <div className="item-line">
+                          <span className="item-line-qty">{order.packagingUnits}</span>
+                          <span className="item-line-name">Empaque delivery</span>
+                          <span className="item-line-price">{order.packagingTotal.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -185,14 +195,14 @@ const ReceiptPrint = ({ receipt, onClose }) => {
             <div className="receipt-divider"></div>
 
             {/* Totales */}
-            <div className="receipt-section">
+            <div className="receipt-section receipt-totals">
               <div className="receipt-row">
                 <span>Subtotal:</span>
-                <span>S/ {payment.subtotal.toFixed(2)}</span>
+                <span>{payment.subtotal.toFixed(2)}</span>
               </div>
               <div className="receipt-row">
                 <span>IGV (18%):</span>
-                <span>S/ {payment.igvAmount.toFixed(2)}</span>
+                <span>{payment.igvAmount.toFixed(2)}</span>
               </div>
               <div className="receipt-divider-bold"></div>
               <div className="receipt-row receipt-total">
@@ -210,17 +220,17 @@ const ReceiptPrint = ({ receipt, onClose }) => {
                 <div key={idx} className="payment-method-detail">
                   <div className="receipt-row">
                     <span>{getPaymentMethodLabel(method.paymentMethod)}:</span>
-                    <span>S/ {method.amount.toFixed(2)}</span>
+                    <span>{method.amount.toFixed(2)}</span>
                   </div>
                   {method.paymentMethod === 'CASH' && (
                     <>
                       <div className="receipt-row indent">
                         <span>Recibido:</span>
-                        <span>S/ {method.amountReceived.toFixed(2)}</span>
+                        <span>{method.amountReceived.toFixed(2)}</span>
                       </div>
                       <div className="receipt-row indent">
                         <span>Vuelto:</span>
-                        <span>S/ {method.changeGiven.toFixed(2)}</span>
+                        <span>{method.changeGiven.toFixed(2)}</span>
                       </div>
                     </>
                   )}

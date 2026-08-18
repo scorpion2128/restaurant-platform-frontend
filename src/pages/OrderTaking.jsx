@@ -5,8 +5,28 @@ import Toast from '../components/Toast/Toast';
 import Layout from '../components/Layout/Layout';
 import TableSelector from '../components/TableSelector/TableSelector';
 import PaymentModal from '../components/Payment/PaymentModal';
+import GroupedOrderItems, { countOrderSelections } from '../components/GroupedOrderItems/GroupedOrderItems';
 import { useConfirmDialog } from '../components/ConfirmDialog/ConfirmDialog';
 import './OrderTaking.css';
+
+const MENU_COMPLEMENT_PRICE = 1;
+
+const normalizeSectionName = (sectionName = '') => sectionName
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .trim()
+  .toUpperCase()
+  .replace(/^ENTRADAS$/, 'ENTRADA')
+  .replace(/^SOPAS$/, 'SOPA')
+  .replace(/^PLATOS DE FONDO$/, 'PLATO DE FONDO')
+  .replace(/^BEBIDAS$/, 'BEBIDA');
+
+const getSectionLabel = (sectionName) => ({
+  ENTRADA: 'Entradas',
+  SOPA: 'Sopas',
+  'PLATO DE FONDO': 'Platos de fondo',
+  BEBIDA: 'Bebidas'
+}[normalizeSectionName(sectionName)] || sectionName);
 
 const OrderTaking = () => {
   const confirm = useConfirmDialog();
@@ -14,6 +34,7 @@ const OrderTaking = () => {
   const [serviceMode, setServiceMode] = useState('tables');
   const [deliveryOrders, setDeliveryOrders] = useState([]);
   const [showDeliveryForm, setShowDeliveryForm] = useState(false);
+  const [useMinimalDeliveryData, setUseMinimalDeliveryData] = useState(false);
   const [paymentOrderId, setPaymentOrderId] = useState(null);
   const [deliveryCustomer, setDeliveryCustomer] = useState({
     customerName: '', customerPhone: '', deliveryAddress: '', deliveryReference: '', orderChannel: 'WHATSAPP'
@@ -25,7 +46,7 @@ const OrderTaking = () => {
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [menuCombo, setMenuCombo] = useState({ entrada: null, plato: null, bebida: null });
+  const [menuCombo, setMenuCombo] = useState({ entrada: null, plato: null });
   const [currentItemNotes, setCurrentItemNotes] = useState('');
   const [nextMenuGroupId, setNextMenuGroupId] = useState(1);
 
@@ -87,6 +108,16 @@ const OrderTaking = () => {
     setToast({ show: true, message, type });
   };
 
+  const openMenuModal = () => {
+    setMenuCombo({ entrada: null, plato: null });
+    setShowMenuModal(true);
+  };
+
+  const closeMenuModal = () => {
+    setMenuCombo({ entrada: null, plato: null });
+    setShowMenuModal(false);
+  };
+
   const handleAddToCart = (item, sectionName) => {
     // Buscar si ya existe el item en el carrito
     const existingIndex = cart.findIndex(
@@ -117,23 +148,27 @@ const OrderTaking = () => {
   };
 
   const handleCreateMenuCombo = () => {
-    const { entrada, plato, bebida } = menuCombo;
+    const { entrada, plato } = menuCombo;
     
-    if (!entrada || !plato || !bebida) {
-      showToast('Debes seleccionar entrada, plato de fondo y bebida', 'error');
+    if (!entrada || !plato) {
+      showToast('Debes seleccionar una entrada y un plato de fondo', 'error');
+      return;
+    }
+
+    const mainCoursePrice = Number(plato.productPrice);
+    if (!Number.isFinite(mainCoursePrice)) {
+      showToast('El plato de fondo seleccionado no tiene un precio válido', 'error');
       return;
     }
 
     const groupId = nextMenuGroupId;
-    const menuPrice = 12.00; // Precio fijo del menú
-    const pricePerItem = (menuPrice / 3).toFixed(2);
 
     const menuItems = [
       {
         productId: entrada.productId,
         productName: entrada.productName,
         quantity: 1,
-        unitPrice: parseFloat(pricePerItem),
+        unitPrice: MENU_COMPLEMENT_PRICE,
         notes: '',
         isPartOfMenu: true,
         menuGroupId: groupId,
@@ -143,28 +178,17 @@ const OrderTaking = () => {
         productId: plato.productId,
         productName: plato.productName,
         quantity: 1,
-        unitPrice: parseFloat(pricePerItem),
+        unitPrice: mainCoursePrice,
         notes: '',
         isPartOfMenu: true,
         menuGroupId: groupId,
         sectionName: 'PLATO DE FONDO'
-      },
-      {
-        productId: bebida.productId,
-        productName: bebida.productName,
-        quantity: 1,
-        unitPrice: parseFloat(pricePerItem),
-        notes: '',
-        isPartOfMenu: true,
-        menuGroupId: groupId,
-        sectionName: 'BEBIDA'
       }
     ];
 
     setCart([...cart, ...menuItems]);
     setNextMenuGroupId(groupId + 1);
-    setShowMenuModal(false);
-    setMenuCombo({ entrada: null, plato: null, bebida: null });
+    closeMenuModal();
     showToast('Menú agregado al carrito', 'success');
   };
 
@@ -186,6 +210,35 @@ const OrderTaking = () => {
     const updatedCart = [...cart];
     updatedCart[index].notes = notes;
     setCart(updatedCart);
+  };
+
+  const updateMenuGroupQuantity = (menuGroupId, delta) => {
+    const groupItems = cart.filter(item => item.isPartOfMenu && item.menuGroupId === menuGroupId);
+    if (groupItems.length === 0) return;
+
+    const newQuantity = groupItems[0].quantity + delta;
+    if (newQuantity <= 0) {
+      setCart(cart.filter(item => !(item.isPartOfMenu && item.menuGroupId === menuGroupId)));
+      return;
+    }
+
+    setCart(cart.map(item =>
+      item.isPartOfMenu && item.menuGroupId === menuGroupId
+        ? { ...item, quantity: newQuantity }
+        : item
+    ));
+  };
+
+  const updateMenuGroupNotes = (menuGroupId, notes) => {
+    setCart(cart.map(item =>
+      item.isPartOfMenu && item.menuGroupId === menuGroupId
+        ? { ...item, notes }
+        : item
+    ));
+  };
+
+  const removeMenuGroup = (menuGroupId) => {
+    setCart(cart.filter(item => !(item.isPartOfMenu && item.menuGroupId === menuGroupId)));
   };
 
   const removeFromCart = (index) => {
@@ -315,24 +368,43 @@ const OrderTaking = () => {
     if (menus.length === 0) return [];
     const sections = getMenuItemsBySection(menus[0]);
     const matchingSection = Object.keys(sections).find(
-      name => name.toUpperCase() === sectionName.toUpperCase()
+      name => normalizeSectionName(name) === normalizeSectionName(sectionName)
     );
     return matchingSection ? sections[matchingSection] : [];
   };
 
-  const groupCartItemsByMenu = () => {
-    const grouped = {};
+  const groupCartBySection = () => {
+    const menuGroups = new Map();
+    const productSections = new Map();
+
     cart.forEach((item, index) => {
       if (item.isPartOfMenu && item.menuGroupId) {
-        if (!grouped[item.menuGroupId]) {
-          grouped[item.menuGroupId] = [];
+        if (!menuGroups.has(item.menuGroupId)) {
+          menuGroups.set(item.menuGroupId, []);
         }
-        grouped[item.menuGroupId].push({ ...item, index });
+        menuGroups.get(item.menuGroupId).push({ ...item, index });
       } else {
-        grouped[`individual-${index}`] = [{ ...item, index }];
+        const sectionKey = normalizeSectionName(item.sectionName || 'OTROS');
+        if (!productSections.has(sectionKey)) {
+          productSections.set(sectionKey, []);
+        }
+        productSections.get(sectionKey).push({ ...item, index });
       }
     });
-    return grouped;
+
+    const sections = [];
+    if (menuGroups.size > 0) {
+      sections.push({ key: 'menus', label: 'Menús', type: 'menus', entries: [...menuGroups.values()] });
+    }
+    const sectionPriority = { ENTRADA: 1, SOPA: 2, 'PLATO DE FONDO': 3, BEBIDA: 4 };
+    [...productSections.entries()]
+      .sort(([keyA], [keyB]) =>
+        (sectionPriority[keyA] ?? 99) - (sectionPriority[keyB] ?? 99) || keyA.localeCompare(keyB)
+      )
+      .forEach(([key, entries]) => {
+      sections.push({ key, label: getSectionLabel(key), type: 'products', entries });
+      });
+    return sections;
   };
 
   const hasDeliveredOrders = activeOrders.some(order => order.status === 'DELIVERED');
@@ -354,13 +426,33 @@ const OrderTaking = () => {
 
   const handleStartDelivery = (event) => {
     event.preventDefault();
-    if (!deliveryCustomer.customerName.trim() || !deliveryCustomer.customerPhone.trim() || !deliveryCustomer.deliveryAddress.trim()) {
+    if (!deliveryCustomer.customerName.trim()) {
+      showToast('Ingresa el nombre del cliente', 'error');
+      return;
+    }
+    if (!useMinimalDeliveryData && (!deliveryCustomer.customerPhone.trim() || !deliveryCustomer.deliveryAddress.trim())) {
       showToast('Completa nombre, teléfono y dirección del cliente', 'error');
       return;
+    }
+
+    if (useMinimalDeliveryData) {
+      setDeliveryCustomer(current => ({
+        ...current,
+        customerPhone: 'No registrado',
+        deliveryAddress: 'Dirección conocida',
+        deliveryReference: 'Cliente conocido',
+        orderChannel: 'OTHER'
+      }));
     }
     setShowDeliveryForm(false);
     setSelectedTable({ type: 'DELIVERY' });
     setActiveOrders([]);
+  };
+
+  const openDeliveryForm = () => {
+    setDeliveryCustomer({ customerName: '', customerPhone: '', deliveryAddress: '', deliveryReference: '', orderChannel: 'WHATSAPP' });
+    setUseMinimalDeliveryData(false);
+    setShowDeliveryForm(true);
   };
 
   const handleDeliveryStatus = async (orderId, status) => {
@@ -392,7 +484,7 @@ const OrderTaking = () => {
                   <h2>Pedidos a domicilio</h2>
                   <p>Registra y realiza seguimiento a los pedidos delivery.</p>
                 </div>
-                <button className="btn-new-delivery" onClick={() => setShowDeliveryForm(true)}>+ Nuevo delivery</button>
+                <button className="btn-new-delivery" onClick={openDeliveryForm}>+ Nuevo delivery</button>
               </div>
 
               <div className="delivery-orders-grid">
@@ -403,11 +495,19 @@ const OrderTaking = () => {
                       <span>{getOrderStatusLabel(order.status)}</span>
                     </div>
                     <h3>{order.customerName}</h3>
-                    <a href={`tel:${order.customerPhone}`}>{order.customerPhone}</a>
-                    <p>{order.deliveryAddress}</p>
-                    {order.deliveryReference && <small>Ref.: {order.deliveryReference}</small>}
+                    {order.customerPhone && order.customerPhone !== 'No registrado' && (
+                      <a href={`tel:${order.customerPhone}`}>{order.customerPhone}</a>
+                    )}
+                    {order.deliveryAddress && order.deliveryAddress !== 'Dirección conocida' && (
+                      <p>{order.deliveryAddress}</p>
+                    )}
+                    {order.deliveryReference && order.deliveryReference !== 'Cliente conocido' && (
+                      <small>Ref.: {order.deliveryReference}</small>
+                    )}
+                    {order.items?.length > 0 && (
+                      <GroupedOrderItems items={order.items} compact />
+                    )}
                     <div className="delivery-order-summary">
-                      <span>{order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0)} productos</span>
                       <strong>S/ {Number(order.total || 0).toFixed(2)}</strong>
                     </div>
                     {order.status === 'READY' && (
@@ -427,15 +527,28 @@ const OrderTaking = () => {
         {showDeliveryForm && (
           <div className="modal-overlay" onClick={() => setShowDeliveryForm(false)}>
             <div className="modal-content delivery-form-modal" onClick={event => event.stopPropagation()}>
-              <div className="modal-header"><h2>Nuevo pedido delivery</h2><button className="modal-close" onClick={() => setShowDeliveryForm(false)}>×</button></div>
+              <div className="modal-header"><h2>Nuevo delivery</h2><button className="modal-close" onClick={() => setShowDeliveryForm(false)}>×</button></div>
               <form className="modal-form" onSubmit={handleStartDelivery}>
-                <div className="form-row">
-                  <div className="form-group"><label>Cliente *</label><input className="input" value={deliveryCustomer.customerName} onChange={e => setDeliveryCustomer({...deliveryCustomer, customerName: e.target.value})} /></div>
-                  <div className="form-group"><label>Teléfono *</label><input className="input" type="tel" value={deliveryCustomer.customerPhone} onChange={e => setDeliveryCustomer({...deliveryCustomer, customerPhone: e.target.value})} /></div>
-                </div>
-                <div className="form-group"><label>Dirección *</label><input className="input" value={deliveryCustomer.deliveryAddress} onChange={e => setDeliveryCustomer({...deliveryCustomer, deliveryAddress: e.target.value})} /></div>
-                <div className="form-group"><label>Referencia</label><input className="input" value={deliveryCustomer.deliveryReference} onChange={e => setDeliveryCustomer({...deliveryCustomer, deliveryReference: e.target.value})} /></div>
-                <div className="form-group"><label>Canal del pedido</label><select className="input" value={deliveryCustomer.orderChannel} onChange={e => setDeliveryCustomer({...deliveryCustomer, orderChannel: e.target.value})}><option value="WHATSAPP">WhatsApp</option><option value="CALL">Llamada</option><option value="IN_PERSON">Presencial</option><option value="OTHER">Otro</option></select></div>
+                <label className="delivery-minimal-toggle">
+                  <input
+                    type="checkbox"
+                    checked={useMinimalDeliveryData}
+                    onChange={event => setUseMinimalDeliveryData(event.target.checked)}
+                  />
+                  <span>
+                    <strong>Cliente conocido</strong>
+                    <small>Solo se solicitará el nombre del cliente.</small>
+                  </span>
+                </label>
+                <div className="form-group"><label>Cliente *</label><input className="input" value={deliveryCustomer.customerName} onChange={e => setDeliveryCustomer({...deliveryCustomer, customerName: e.target.value})} /></div>
+                {!useMinimalDeliveryData && (
+                  <>
+                    <div className="form-group"><label>Teléfono *</label><input className="input" type="tel" value={deliveryCustomer.customerPhone} onChange={e => setDeliveryCustomer({...deliveryCustomer, customerPhone: e.target.value})} /></div>
+                    <div className="form-group"><label>Dirección *</label><input className="input" value={deliveryCustomer.deliveryAddress} onChange={e => setDeliveryCustomer({...deliveryCustomer, deliveryAddress: e.target.value})} /></div>
+                    <div className="form-group"><label>Referencia</label><input className="input" value={deliveryCustomer.deliveryReference} onChange={e => setDeliveryCustomer({...deliveryCustomer, deliveryReference: e.target.value})} /></div>
+                    <div className="form-group"><label>Canal del pedido</label><select className="input" value={deliveryCustomer.orderChannel} onChange={e => setDeliveryCustomer({...deliveryCustomer, orderChannel: e.target.value})}><option value="WHATSAPP">WhatsApp</option><option value="CALL">Llamada</option><option value="IN_PERSON">Presencial</option><option value="OTHER">Otro</option></select></div>
+                  </>
+                )}
                 <div className="modal-actions"><button type="button" className="btn btn-cancel" onClick={() => setShowDeliveryForm(false)}>Cancelar</button><button className="btn btn-primary" type="submit">Continuar al pedido</button></div>
               </form>
             </div>
@@ -466,7 +579,7 @@ const OrderTaking = () => {
               <span className="btn-back-icon" aria-hidden="true">←</span>
               <span>{selectedTable.type === 'DELIVERY' ? 'Delivery' : 'Mesas'}</span>
             </button>
-            <h2>{selectedTable.type === 'DELIVERY' ? `Delivery - ${deliveryCustomer.customerName}` : `Tomar Pedido - Mesa ${selectedTable.number}`}</h2>
+            <h2>{selectedTable.type === 'DELIVERY' ? `Delivery - ${deliveryCustomer.customerName}` : `Mesa ${selectedTable.number}`}</h2>
           </div>
           <div className="header-right">
             {selectedTable.type !== 'DELIVERY' && hasDeliveredOrders && (
@@ -481,13 +594,13 @@ const OrderTaking = () => {
         {/* Menú del día o Carta */}
         <div className="menu-section">
           <div className="menu-header">
-            <h3>Menú del Día</h3>
+            <h3>Carta del día</h3>
             {menus.length > 0 && (
               <button
                 className="btn-create-menu"
-                onClick={() => setShowMenuModal(true)}
+                onClick={openMenuModal}
               >
-                🍽️ Armar Menú (S/12)
+                🍽️ Armar menú
               </button>
             )}
           </div>
@@ -502,7 +615,7 @@ const OrderTaking = () => {
                       <div key={item.id} className="menu-item-card">
                         <div className="item-info">
                           <span className="item-name">{item.productName}</span>
-                          {!['ENTRADA', 'SOPA'].includes(sectionName) && (
+                          {!['ENTRADA', 'SOPA'].includes(normalizeSectionName(sectionName)) && (
                             <span className="item-price">
                               S/ {(item.productPrice).toFixed(2)}
                             </span>
@@ -531,18 +644,56 @@ const OrderTaking = () => {
           {cart.length > 0 ? (
             <>
               <div className="cart-items">
-                {Object.entries(groupCartItemsByMenu()).map(([groupKey, items]) => {
-                  const isMenu = items[0].isPartOfMenu;
-                  return (
-                    <div key={groupKey} className={`cart-group ${isMenu ? 'menu-group' : ''}`}>
-                      {isMenu && (
-                        <div className="menu-badge-cart">
-                          🍽️ Menú (S/12) - Grupo {items[0].menuGroupId}
+                {groupCartBySection().map(section => (
+                  <section key={section.key} className="cart-section-group">
+                    <h4 className="cart-section-title">{section.label}</h4>
+                    <div className="cart-section-entries">
+                      {section.type === 'menus' ? section.entries.map(items => {
+                        const menuQuantity = items[0].quantity;
+                        const menuUnitPrice = items.reduce((total, item) => total + item.unitPrice, 0);
+                        return (
+                        <article key={items[0].menuGroupId} className="cart-entry-card menu-entry-card">
+                          <div className="menu-cart-unified">
+                          <div className="menu-entry-header">
+                            <div className="menu-cart-components">
+                              {items.map(item => (
+                                <span key={item.index}>
+                                  <small>{item.sectionName === 'ENTRADA' ? 'Entrada' : 'Fondo'}</small>
+                                  <span>{item.productName}</span>
+                                </span>
+                              ))}
+                            </div>
+                            <strong className="item-subtotal">S/ {(menuUnitPrice * menuQuantity).toFixed(2)}</strong>
+                            <button
+                              className="btn-remove-group"
+                              onClick={() => removeMenuGroup(items[0].menuGroupId)}
+                              aria-label="Eliminar menú completo"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <div className="cart-item-actions">
+                            <span className="quantity-label">Cantidad</span>
+                            <div className="quantity-controls">
+                              <button onClick={() => updateMenuGroupQuantity(items[0].menuGroupId, -1)} aria-label="Disminuir cantidad de menús">−</button>
+                              <span aria-live="polite">{menuQuantity}</span>
+                              <button onClick={() => updateMenuGroupQuantity(items[0].menuGroupId, 1)} aria-label="Aumentar cantidad de menús">+</button>
+                            </div>
+                          </div>
+                          <div className="item-notes-input">
+                            <input
+                              type="text"
+                              placeholder="Notas (opcional)"
+                              value={items[0].notes || ''}
+                              onChange={(e) => updateMenuGroupNotes(items[0].menuGroupId, e.target.value)}
+                            />
+                          </div>
                         </div>
-                      )}
-                      {items.map((item) => (
-                        <div key={item.index} className="cart-item">
-                          <div className="cart-item-main">
+                        </article>
+                        );
+                      }) : section.entries.map(item => (
+                        <article key={item.index} className="cart-entry-card product-entry-card">
+                          <div className="product-entry-header">
                             <span className="item-name-cart">
                               {item.productName}
                               {item.notes && <span className="has-notes"> ⚠️</span>}
@@ -550,7 +701,15 @@ const OrderTaking = () => {
                             <span className="item-subtotal">
                               S/ {(item.unitPrice * item.quantity).toFixed(2)}
                             </span>
+                            <button
+                              className="btn-remove-group"
+                              onClick={() => removeFromCart(item.index)}
+                              aria-label={`Eliminar ${item.productName}`}
+                            >
+                              ×
+                            </button>
                           </div>
+                          <div className="product-entry-body">
                           <div className="cart-item-actions">
                             <span className="quantity-label">Cantidad</span>
                             <div className="quantity-controls">
@@ -559,14 +718,6 @@ const OrderTaking = () => {
                               <button onClick={() => updateCartItemQuantity(item.index, 1)} aria-label={`Aumentar cantidad de ${item.productName}`}>+</button>
                             </div>
                           </div>
-                          {!isMenu && (
-                            <button
-                              className="btn-remove-item"
-                              onClick={() => removeFromCart(item.index)}
-                            >
-                              ×
-                            </button>
-                          )}
                           <div className="item-notes-input">
                             <input
                               type="text"
@@ -575,11 +726,12 @@ const OrderTaking = () => {
                               onChange={(e) => updateCartItemNotes(item.index, e.target.value)}
                             />
                           </div>
-                        </div>
+                          </div>
+                        </article>
                       ))}
                     </div>
-                  );
-                })}
+                  </section>
+                ))}
               </div>
               <div className="cart-footer">
                 {selectedTable.type === 'DELIVERY' && calculatePackagingUnits() > 0 && (
@@ -621,21 +773,11 @@ const OrderTaking = () => {
                     </div>
                     {order.items?.length > 0 && (
                       <div className="active-order-items">
-                        {order.items.slice(0, 4).map((item, index) => (
-                          <div className="active-order-item" key={item.id || `${order.id}-${index}`}>
-                            <span className="active-order-quantity">{item.quantity || 1}x</span>
-                            <span className="active-order-item-name">
-                              {item.productName || item.menuItemName || 'Producto'}
-                            </span>
-                          </div>
-                        ))}
-                        {order.items.length > 4 && (
-                          <span className="active-order-more">+{order.items.length - 4} producto{order.items.length - 4 !== 1 ? 's' : ''} más</span>
-                        )}
+                        <GroupedOrderItems items={order.items} />
                       </div>
                     )}
                     <div className="order-info">
-                      <span>{order.items?.length || 0} producto{order.items?.length !== 1 ? 's' : ''}</span>
+                      <span>{countOrderSelections(order.items)} elemento{countOrderSelections(order.items) !== 1 ? 's' : ''}</span>
                       <strong>Total: S/ {Number(order.total ?? 0).toFixed(2)}</strong>
                     </div>
                   </div>
@@ -650,16 +792,18 @@ const OrderTaking = () => {
 
       {/* Modal armar menú */}
       {showMenuModal && (
-        <div className="modal-overlay order-taking-menu-overlay" onClick={() => setShowMenuModal(false)}>
+        <div className="modal-overlay order-taking-menu-overlay" onClick={closeMenuModal}>
           <div className="modal-content order-taking-menu-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Armar Menú Completo</h3>
-              <button className="btn-close" onClick={() => setShowMenuModal(false)}>×</button>
+              <h3>Armar Menú</h3>
+              <button className="btn-close" onClick={closeMenuModal} aria-label="Cerrar">×</button>
             </div>
             <div className="modal-body">
               <div className="menu-combo-section">
-                <h4>Entrada</h4>
+                <h4>Entrada <span className="required-mark" aria-hidden="true">*</span></h4>
                 <select
+                  required
+                  aria-required="true"
                   value={menuCombo.entrada?.id || ''}
                   onChange={(e) => {
                     const item = menus[0]?.items.find(i => i.id === parseInt(e.target.value));
@@ -674,8 +818,10 @@ const OrderTaking = () => {
               </div>
 
               <div className="menu-combo-section">
-                <h4>Plato de Fondo</h4>
+                <h4>Plato de Fondo <span className="required-mark" aria-hidden="true">*</span></h4>
                 <select
+                  required
+                  aria-required="true"
                   value={menuCombo.plato?.id || ''}
                   onChange={(e) => {
                     const item = menus[0]?.items.find(i => i.id === parseInt(e.target.value));
@@ -689,32 +835,30 @@ const OrderTaking = () => {
                 </select>
               </div>
 
-              <div className="menu-combo-section">
-                <h4>Bebida</h4>
-                <select
-                  value={menuCombo.bebida?.id || ''}
-                  onChange={(e) => {
-                    const item = menus[0]?.items.find(i => i.id === parseInt(e.target.value));
-                    setMenuCombo({ ...menuCombo, bebida: item });
-                  }}
-                >
-                  <option value="">Seleccionar bebida</option>
-                  {getItemsBySection('BEBIDA').map((item) => (
-                    <option key={item.id} value={item.id}>{item.productName}</option>
-                  ))}
-                </select>
-              </div>
-
               <div className="menu-price-info">
-                <strong>Precio del Menú: S/ 12.00</strong>
+                {menuCombo.plato ? (
+                  <>
+                    <span>Plato de fondo: S/ {Number(menuCombo.plato.productPrice).toFixed(2)}</span>
+                    <span>Entrada: S/ {MENU_COMPLEMENT_PRICE.toFixed(2)}</span>
+                    <strong>
+                      Total del menú: S/ {(Number(menuCombo.plato.productPrice) + MENU_COMPLEMENT_PRICE).toFixed(2)}
+                    </strong>
+                  </>
+                ) : (
+                  <strong>Selecciona el plato de fondo para calcular el precio.</strong>
+                )}
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn-cancel" onClick={() => setShowMenuModal(false)}>
+              <button className="btn-cancel" onClick={closeMenuModal}>
                 Cancelar
               </button>
-              <button className="btn-confirm" onClick={handleCreateMenuCombo}>
-                Agregar al Carrito
+              <button
+                className="btn-confirm"
+                onClick={handleCreateMenuCombo}
+                disabled={!menuCombo.entrada || !menuCombo.plato}
+              >
+                Agregar al carrito
               </button>
             </div>
           </div>

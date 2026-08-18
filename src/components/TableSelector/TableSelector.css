@@ -82,19 +82,19 @@
 
 /* Estados del círculo de mesa */
 .table-circle.table-available {
-  background:  #10b981;
+  background:  var(--status-ready);
 }
 
 .table-circle.table-occupied {
-  background: #ef4444;
+  background: var(--status-danger);
 }
 
 .table-circle.table-reserved {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: var(--status-pending);
 }
 
 .table-circle.table-out-of-service {
-  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  background: var(--status-delivered);
 }
 
 .table-number {
@@ -121,19 +121,19 @@
 
 /* Estados del indicador de orden */
 .order-indicator-pending {
-  background: #ff9800; /* Naranja - Pendiente */
+  background: var(--status-pending); /* Naranja - Pendiente */
 }
 
 .order-indicator-preparation {
-  background: #2196f3; /* Turquesa - En preparación */
+  background: var(--status-preparing); /* Turquesa - En preparación */
 }
 
 .order-indicator-ready {
-  background: #4caf50; /* Verde - Listo para entregar */
+  background: var(--status-ready); /* Verde - Listo para entregar */
 }
 
 .order-indicator-delivered {
-  background: #fbf020; /* Naranja - Entregado */
+  background: var(--status-delivered); /* Naranja - Entregado */
 }
 
 /* ============================================
@@ -151,19 +151,19 @@
 
 /* Estados del badge de mesa */
 .table-status-badge.table-available {
-  background: #10b981;
+  background: var(--status-ready);
 }
 
 .table-status-badge.table-occupied {
-  background: #ef4444;
+  background: var(--status-danger);
 }
 
 .table-status-badge.table-reserved {
-  background: #f59e0b;
+  background: var(--status-pending);
 }
 
 .table-status-badge.table-out-of-service {
-  background: #9ca3af;
+  background: var(--text-light);
 }
 
 /* ============================================
@@ -194,7 +194,7 @@
 }
 
 .ready-count {
-  color: #10b981;
+  color: var(--status-ready);
   font-weight: 600;
 }
 
@@ -204,19 +204,19 @@
 }
 
 .time-elapsed.time-normal {
-  color: #10b981; /* Verde - menos de 10 min */
+  color: var(--status-ready); /* Verde - menos de 10 min */
 }
 
 .time-elapsed.time-warning {
-  color: #f59e0b; /* Naranja - 10-20 min */
+  color: var(--status-pending); /* Naranja - 10-20 min */
 }
 
 .time-elapsed.time-critical {
-  color: #ef4444; /* Rojo - más de 20 min */
+  color: var(--status-danger); /* Rojo - más de 20 min */
 }
 
 .status-delivered {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -309,7 +309,7 @@
   width: 42px;
   height: 42px;
   border-radius: 0.75rem;
-  background: #fff7ed;
+  background: var(--primary-soft);
   font-size: 1.25rem;
 }
 
@@ -368,18 +368,18 @@
 }
 
 .orders-board-column.column-pending {
-  background: #fff7ed;
-  border-color: #fed7aa;
+  background: var(--primary-soft);
+  border-color: var(--primary-border);
 }
 
 .orders-board-column.column-preparation {
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  background: var(--status-preparing-bg);
+  border-color: var(--status-preparing-bg);
 }
 
 .orders-board-column.column-ready {
-  background: #ecfdf5;
-  border-color: #a7f3d0;
+  background: var(--status-ready-bg);
+  border-color: var(--status-ready-bg);
 }
 
 .orders-column-header,
@@ -412,15 +412,15 @@
 }
 
 .column-pending .orders-column-indicator {
-  background: #ff9800;
+  background: var(--status-pending);
 }
 
 .column-preparation .orders-column-indicator {
-  background: #2196f3;
+  background: var(--status-preparing);
 }
 
 .column-ready .orders-column-indicator {
-  background: #4caf50;
+  background: var(--status-ready);
 }
 
 .orders-column-count {
@@ -448,7 +448,7 @@
   min-height: 7rem;
   border: 1px dashed rgba(100, 116, 139, 0.35);
   border-radius: 0.75rem;
-  color: #64748b;
+  color: var(--text-secondary);
   background: rgba(255, 255, 255, 0.55);
   font-size: 0.875rem;
 }
@@ -459,25 +459,25 @@
   border-radius: 0.75rem;
   padding: 1rem;
   border: 1px solid var(--border);
-  border-top: 4px solid #cbd5e1;
+  border-top: 4px solid var(--border-strong);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .order-card-large.status-pending {
-  border-top-color: #f59e0b;
+  border-top-color: var(--status-pending);
 }
 
 .order-card-large.status-in_preparation {
-  border-top-color: #2196f3;
+  border-top-color: var(--status-preparing);
 }
 
 .order-card-large.status-ready {
-  border-top-color: #10b981;
+  border-top-color: var(--status-ready);
 }
 
 .order-card-large.status-delivered {
-  border-top-color: #94a3b8;
+  border-top-color: var(--text-light);
 }
 
 .order-card-large:hover {
@@ -523,23 +523,23 @@
 }
 
 .order-card-large.status-pending .status-main {
-  color: #92400e;
-  background: #fef3c7;
+  color: var(--status-pending);
+  background: var(--status-pending-bg);
 }
 
 .order-card-large.status-in_preparation .status-main {
-  color: #1e40af;
-  background: #dbeafe;
+  color: var(--status-preparing);
+  background: var(--status-preparing-bg);
 }
 
 .order-card-large.status-ready .status-main {
   color: #047857;
-  background: #d1fae5;
+  background: var(--status-ready-bg);
 }
 
 .order-card-large.status-delivered .status-main {
-  color: #6b7280;
-  background: #f1f5f9;
+  color: var(--text-secondary);
+  background: var(--bg-hover);
 }
 
 /* Cuerpo de la tarjeta de orden */
@@ -589,7 +589,7 @@
 /* Botón marcar como entregado */
 .btn-mark-delivered {
   padding: 0.75rem;
-  background: #10b981;
+  background: var(--status-ready);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -600,7 +600,7 @@
 }
 
 .btn-mark-delivered:hover {
-  background: #059669;
+  background: var(--status-ready);
 }
 
 /* ============================================

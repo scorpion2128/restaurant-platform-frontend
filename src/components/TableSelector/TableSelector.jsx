@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { tableService } from '../../services/tableService';
 import { orderService } from '../../services/orderService';
 import Toast from '../Toast/Toast';
+import GroupedOrderItems from '../GroupedOrderItems/GroupedOrderItems';
 import './TableSelector.css';
 
 const TableSelector = ({ onTableSelected }) => {
@@ -492,28 +493,9 @@ const TableSelector = ({ onTableSelected }) => {
                       {/* Lista de platillos */}
                       {order.items && order.items.length > 0 && (
                         <div className="order-items-preview">
-                          {order.items.slice(0, 3).map((item, idx) => (
-                            <div key={idx} className="item-preview">
-                              <span className="item-quantity">{item.quantity}x</span>
-                              <span className="item-name">{item.menuItemName || item.productName || 'Platillo'}</span>
-                            </div>
-                          ))}
-                          {order.items.length > 3 && (
-                            <div className="items-more">
-                              +{order.items.length - 3} más
-                            </div>
-                          )}
+                          <GroupedOrderItems items={order.items} compact maxGroups={3} />
                         </div>
                       )}
-                      
-                      <div className="order-meta">
-                        {order.items && order.items.length > 0 && (
-                          <span className="meta-item">
-                            <span className="meta-icon">🍽️</span>
-                            {order.items.length} platillo{order.items.length > 1 ? 's' : ''}
-                          </span>
-                        )}
-                      </div>
                       
                       {/* Botón para marcar como entregado (solo si está listo) */}
                       {order.status === 'READY' && (

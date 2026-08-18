@@ -209,19 +209,6 @@ const Users = () => {
     return enabled ? 'Activo' : 'Inactivo'
   }
 
-  if (loading && users.length === 0) {
-    return (
-      <Layout>
-        <div className="users-page">
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Cargando usuarios...</p>
-          </div>
-        </div>
-      </Layout>
-    )
-  }
-
   return (
     <Layout>
       <div className="users-page">
@@ -357,13 +344,13 @@ const Users = () => {
         </div>
 
         {/* Tabla de usuarios */}
-        <div className="users-table-container card">
-          {loading ? (
+        <div className="users-table-container card" aria-busy={loading}>
+          {loading && (
             <div className="loading-overlay">
               <div className="spinner"></div>
             </div>
-          ) : (
-            <table className="users-table">
+          )}
+          <table className="users-table">
               <thead>
                 <tr>
                   <th>Restaurante</th>
@@ -426,8 +413,7 @@ const Users = () => {
                   )
                 })}
               </tbody>
-            </table>
-          )}
+          </table>
 
           {filteredUsers.length === 0 && !loading && (
             <div className="empty-state">

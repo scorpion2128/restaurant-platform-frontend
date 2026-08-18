@@ -28,13 +28,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 2px solid var(--border);
 }
 
 .payment-modal-header h2 {
   margin: 0;
   font-size: 20px;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .payment-modal .btn-close {
@@ -42,7 +42,7 @@
   border: none;
   font-size: 24px;
   cursor: pointer;
-  color: #666;
+  color: var(--text-secondary);
   padding: 0;
   width: 32px;
   height: 32px;
@@ -54,8 +54,8 @@
 }
 
 .payment-modal .btn-close:hover {
-  background: #f5f5f5;
-  color: #333;
+  background: var(--bg-muted);
+  color: var(--text-primary);
 }
 
 .payment-modal-content {
@@ -68,12 +68,12 @@
 .account-section h3 {
   margin: 0 0 15px 0;
   font-size: 16px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .order-card {
-  background: #f9f9f9;
-  border: 1px solid #e0e0e0;
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 15px;
   margin-bottom: 12px;
@@ -85,18 +85,18 @@
   align-items: center;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--border);
 }
 
 .order-number {
   font-weight: 700;
-  color: #2196f3;
+  color: var(--status-preparing);
   font-size: 14px;
 }
 
 .order-date {
   font-size: 12px;
-  color: #999;
+  color: var(--text-light);
 }
 
 .order-items-list {
@@ -112,38 +112,51 @@
 }
 
 .group-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
   font-size: 11px;
   font-weight: 700;
-  color: #2196f3;
+  color: var(--status-preparing);
   margin-bottom: 6px;
   padding-bottom: 3px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--border);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .order-item-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px 0;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 4px 0;
   font-size: 13px;
+}
+
+.menu-items-with-total {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 70px;
+  align-items: center;
+  column-gap: 6px;
 }
 
 .item-qty {
   font-weight: 700;
-  color: #2196f3;
-  min-width: 30px;
+  color: var(--status-preparing);
+  min-width: 24px;
 }
 
 .item-name {
   flex: 1;
-  color: #333;
+  min-width: 0;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+  line-height: 1.3;
 }
 
 .item-price {
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   min-width: 70px;
   text-align: right;
 }
@@ -151,18 +164,18 @@
 .order-total {
   text-align: right;
   padding-top: 8px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--border);
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .order-total strong {
-  color: #2196f3;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
 .account-summary {
-  background: #f5f5f5;
+  background: var(--bg-muted);
   border-radius: 8px;
   padding: 15px;
   margin: 20px 0;
@@ -173,15 +186,15 @@
   justify-content: space-between;
   padding: 8px 0;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .summary-row.total-row {
-  border-top: 2px solid #333;
+  border-top: 2px solid var(--text-primary);
   padding-top: 12px;
   margin-top: 8px;
   font-size: 18px;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .account-actions {
@@ -192,6 +205,10 @@
 
 .payment-modal .btn-primary,
 .payment-modal .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
   flex: 1;
   padding: 14px;
   border: none;
@@ -203,33 +220,33 @@
 }
 
 .payment-modal .btn-primary {
-  background: #2196f3;
+  background: var(--primary);
   color: white;
 }
 
 .payment-modal .btn-primary:hover:not(:disabled) {
-  background: #1976d2;
+  background: var(--primary-dark);
   box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
 }
 
 .payment-modal .btn-primary:disabled {
-  background: #ccc;
+  background: var(--border-strong);
   cursor: not-allowed;
 }
 
 .payment-modal .btn-secondary {
-  background: #f5f5f5;
-  color: #333;
-  border: 1px solid #ddd;
+  background: var(--bg-muted);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
 }
 
 .payment-modal .btn-secondary:hover {
-  background: #e0e0e0;
+  background: var(--border);
 }
 
 /* Payment View */
 .payment-summary {
-  background: #e3f2fd;
+  background: var(--status-preparing-bg);
   border-radius: 8px;
   padding: 15px;
   margin-bottom: 20px;
@@ -243,16 +260,16 @@
 
 .summary-info div {
   font-size: 14px;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .summary-info .remaining {
-  color: #ff9800;
+  color: var(--status-pending);
   font-size: 16px;
 }
 
 .summary-info .complete {
-  color: #4caf50;
+  color: var(--status-ready);
   font-size: 16px;
 }
 
@@ -263,15 +280,15 @@
 .payment-methods-list h4 {
   margin: 0 0 12px 0;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .payment-method-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f9f9f9;
-  border: 1px solid #e0e0e0;
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 12px;
   margin-bottom: 8px;
@@ -286,23 +303,23 @@
 
 .method-name {
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   font-size: 14px;
 }
 
 .method-amount {
-  color: #2196f3;
+  color: var(--status-preparing);
   font-weight: 700;
   font-size: 16px;
 }
 
 .method-details {
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .btn-remove {
-  background: #ff5252;
+  background: var(--status-danger);
   color: white;
   border: none;
   border-radius: 50%;
@@ -317,11 +334,11 @@
 }
 
 .btn-remove:hover {
-  background: #d32f2f;
+  background: var(--status-danger);
 }
 
 .add-payment-method {
-  background: #f5f5f5;
+  background: var(--bg-muted);
   border-radius: 8px;
   padding: 15px;
   margin-bottom: 20px;
@@ -330,7 +347,7 @@
 .add-payment-method h4 {
   margin: 0 0 15px 0;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .form-group {
@@ -342,14 +359,14 @@
   margin-bottom: 6px;
   font-size: 13px;
   font-weight: 600;
-  color: #555;
+  color: var(--text-primary);
 }
 
 .form-group select,
 .form-group input {
   width: 100%;
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 14px;
   transition: border-color 0.2s;
@@ -358,23 +375,23 @@
 .form-group select:focus,
 .form-group input:focus {
   outline: none;
-  border-color: #2196f3;
+  border-color: var(--status-preparing);
 }
 
 .change-preview {
   margin-top: 8px;
   padding: 8px;
-  background: #e8f5e9;
+  background: var(--status-ready-bg);
   border-radius: 4px;
   font-size: 13px;
   font-weight: 600;
-  color: #4caf50;
+  color: var(--status-ready);
 }
 
 .btn-add-method {
   width: 100%;
   padding: 12px;
-  background: #4caf50;
+  background: var(--status-ready);
   color: white;
   border: none;
   border-radius: 6px;
@@ -385,7 +402,7 @@
 }
 
 .btn-add-method:hover {
-  background: #388e3c;
+  background: var(--status-ready);
 }
 
 .payment-actions {
@@ -393,13 +410,13 @@
   gap: 12px;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 2px solid #e0e0e0;
+  border-top: 2px solid var(--border);
 }
 
 .loading {
   text-align: center;
   padding: 40px;
-  color: #999;
+  color: var(--text-light);
   font-style: italic;
 }
 
