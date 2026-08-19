@@ -8,6 +8,7 @@ import Tables from './pages/Tables'
 import ProductCategories from './pages/ProductCategories'
 import Products from './pages/Products'
 import MenuTemplates from './pages/MenuTemplates'
+import MenuTemplatePrint from './pages/MenuTemplatePrint'
 import DailyMenus from './pages/DailyMenus'
 import OrderTaking from './pages/OrderTaking'
 import KitchenDashboard from './pages/KitchenDashboard'
@@ -69,6 +70,14 @@ function App() {
                 <MenuTemplates />
               </ProtectedRoute>
             } 
+          />
+          <Route
+            path="/master-menu-templates/:id/print"
+            element={
+              <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
+                <MenuTemplatePrint />
+              </ProtectedRoute>
+            }
           />
           <Route 
             path="/daily-menus" 
