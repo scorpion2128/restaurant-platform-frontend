@@ -705,6 +705,26 @@ const MenuTemplates = () => {
                     <div className="actions-cell" style={{ gap: '8px' }}>
                       <button
                         className="btn-icon btn-edit"
+                        onClick={() => navigate(`/master-menu-templates/${template.id}/print`)}
+                        title="Vista previa e imprimir A4"
+                        aria-label={`Imprimir ${template.name}`}
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
+                          <polyline points="6 9 6 2 18 2 18 9" />
+                          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                          <rect x="6" y="14" width="12" height="8" />
+                        </svg>
+                      </button>
+
+                      <button
+                        className="btn-icon btn-edit"
                         onClick={() => handleManageItems(template)}
                         title="Gestionar Contenido"
                         style={{ 

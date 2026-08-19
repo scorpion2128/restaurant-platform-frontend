@@ -1,0 +1,454 @@
+:root {
+  --menu-red: #b5121b;
+  --menu-ink: #171717;
+  --menu-muted: #6b6b6b;
+}
+
+.menu-print-screen {
+  min-height: 100vh;
+  padding: 24px 24px 56px;
+  background: #e9ebef;
+  color: var(--menu-ink);
+}
+
+.menu-print-toolbar {
+  position: sticky;
+  top: 12px;
+  z-index: 10;
+  width: min(100%, 900px);
+  margin: 0 auto 24px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  border: 1px solid #d7d9df;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(24, 31, 45, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.menu-print-toolbar > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.menu-print-toolbar span {
+  color: #676b75;
+  font-size: 12px;
+}
+
+.menu-print-toolbar button,
+.menu-print-status button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid #d2d4da;
+  background: #fff;
+  color: #25272c;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.menu-print-toolbar .menu-print-action {
+  border-color: var(--menu-red);
+  background: var(--menu-red);
+  color: #fff;
+}
+
+.menu-sheet {
+  box-sizing: border-box;
+  position: relative;
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 15mm 14mm 12mm;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 16px 42px rgba(26, 31, 42, 0.18);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.menu-sheet-header {
+  margin-bottom: 8mm;
+  text-align: center;
+}
+
+.sabe-peru-mark {
+  width: 18mm;
+  height: 13.5mm;
+  margin: -3mm auto 2.5mm;
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sabe-peru-mark .mark-steam {
+  stroke: #8b8b8b;
+  stroke-width: 2.3;
+}
+
+.sabe-peru-mark .mark-ladle {
+  stroke: var(--menu-ink);
+  stroke-width: 3;
+}
+
+.sabe-peru-mark .mark-pot-rim,
+.sabe-peru-mark .mark-pot,
+.sabe-peru-mark .mark-handle {
+  stroke: var(--menu-red);
+  stroke-width: 3.2;
+}
+
+.sabe-peru-mark .mark-flame {
+  stroke: var(--menu-red);
+  stroke-width: 2.8;
+}
+
+.menu-sheet-header p {
+  margin: 0 0 2mm;
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 0.42em;
+}
+
+.menu-sheet-header h1 {
+  margin: 0;
+  font-size: 28pt;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.menu-header-rule {
+  display: flex;
+  align-items: center;
+  gap: 4mm;
+  margin: 5mm 8mm 3mm;
+}
+
+.menu-header-rule::before,
+.menu-header-rule::after {
+  content: '';
+  flex: 1;
+  height: 0.35mm;
+  background: var(--menu-red);
+}
+
+.menu-header-rule span {
+  width: 3mm;
+  height: 3mm;
+  border: 0.45mm solid var(--menu-red);
+  transform: rotate(45deg);
+}
+
+.menu-sheet-header h2 {
+  margin: 0;
+  color: var(--menu-muted);
+  font-size: 8.5pt;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.menu-sheet-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(42mm, 0.9fr);
+  gap: 8mm;
+  flex: 1;
+}
+
+.menu-sheet-grid--single {
+  grid-template-columns: 1fr;
+}
+
+.menu-main-sections,
+.menu-side-panel {
+  min-width: 0;
+}
+
+.menu-main-sections {
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-side-panel {
+  display: flex;
+  flex-direction: column;
+  padding-left: 6mm;
+  border-left: 0.35mm solid #b9b9b9;
+}
+
+.printed-menu-section {
+  margin-bottom: 6mm;
+  break-inside: avoid;
+}
+
+.printed-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 2.2mm;
+  margin-bottom: 2.5mm;
+}
+
+.printed-section-heading h3 {
+  margin: 0;
+  font-size: 10.5pt;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.printed-section-icon {
+  width: 7mm;
+  height: 7mm;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--menu-red);
+}
+
+.printed-section-icon svg {
+  width: 4.3mm;
+  height: 4.3mm;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.printed-section-line {
+  flex: 1;
+  height: 0.3mm;
+  background: #9b9b9b;
+}
+
+.printed-menu-items {
+  display: grid;
+  gap: 1.35mm;
+}
+
+.printed-menu-item {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(3mm, 1fr) auto;
+  align-items: baseline;
+  gap: 1.5mm;
+  font-size: 8.6pt;
+  line-height: 1.22;
+}
+
+.printed-menu-item > span:first-child {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.printed-item-leader {
+  min-width: 3mm;
+  border-bottom: 0.25mm dotted #c7c7c7;
+}
+
+.printed-menu-item strong {
+  font-size: 8.5pt;
+  white-space: nowrap;
+}
+
+.printed-section-heading--side {
+  color: var(--menu-red);
+}
+
+.printed-menu-item--side {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2mm;
+  font-size: 7.7pt;
+}
+
+.printed-menu-item--side strong {
+  font-size: 7.7pt;
+}
+
+.menu-takeaway {
+  margin: 13mm 0 9mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5mm;
+  color: var(--menu-red);
+  text-align: center;
+}
+
+.menu-takeaway svg {
+  width: 15mm;
+  height: 15mm;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.menu-takeaway strong {
+  font-size: 12pt;
+  letter-spacing: 0.08em;
+}
+
+.menu-takeaway span {
+  font-size: 10pt;
+  font-weight: 700;
+}
+
+.menu-payment-notes {
+  padding-top: 6mm;
+  display: flex;
+  flex-direction: column;
+  gap: 4mm;
+  border-top: 0.3mm solid #a7a7a7;
+  text-align: center;
+}
+
+.menu-payment-notes strong {
+  font-size: 8.5pt;
+}
+
+.menu-payment-notes span {
+  color: #313131;
+  font-size: 7.2pt;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.menu-inspirational-quote {
+  width: 100%;
+  margin: auto 0 5mm;
+  padding: 5mm 2mm;
+  position: relative;
+  border-top: 0.35mm solid var(--menu-red);
+  border-bottom: 0.35mm solid var(--menu-red);
+  color: #333;
+  text-align: center;
+  break-inside: avoid;
+}
+
+.menu-inspirational-quote span {
+  position: absolute;
+  top: -5mm;
+  left: 50%;
+  padding: 0 3mm;
+  transform: translateX(-50%);
+  background: #fff;
+  color: var(--menu-red);
+  font: 700 18pt Georgia, serif;
+  line-height: 1;
+}
+
+.menu-inspirational-quote p {
+  margin: 0;
+  font: italic 8pt/1.55 Georgia, 'Times New Roman', serif;
+}
+
+.menu-sheet-footer {
+  display: flex;
+  align-items: center;
+  gap: 4mm;
+  margin-top: auto;
+  padding-top: 7mm;
+}
+
+.menu-sheet-footer span {
+  flex: 1;
+  height: 0.3mm;
+  background: var(--menu-red);
+}
+
+.menu-sheet-footer i {
+  width: 3mm;
+  height: 3mm;
+  border: 0.4mm solid var(--menu-red);
+  transform: rotate(45deg);
+}
+
+.menu-empty,
+.menu-print-status {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  color: #555;
+  font: 600 16px Arial, sans-serif;
+  text-align: center;
+}
+
+.menu-print-error {
+  align-content: center;
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .menu-print-screen {
+    overflow-x: auto;
+    padding-inline: 12px;
+  }
+
+  .menu-print-toolbar {
+    position: static;
+    min-width: 720px;
+  }
+
+  .menu-sheet {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@page menu-template-a4 {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  html,
+  body,
+  #root {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .menu-print-screen {
+    min-height: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  .menu-print-screen,
+  .menu-print-screen * {
+    visibility: visible !important;
+  }
+
+  .menu-print-toolbar {
+    display: none !important;
+  }
+
+  .menu-sheet {
+    page: menu-template-a4;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0;
+    box-shadow: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
