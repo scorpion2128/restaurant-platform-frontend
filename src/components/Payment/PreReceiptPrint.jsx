@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { formatPeruDateTime } from '../../utils/dateTime';
 import './ReceiptPrint.css';
 
 const PreReceiptPrint = ({ account, onClose }) => {
@@ -88,7 +89,7 @@ const PreReceiptPrint = ({ account, onClose }) => {
               </div>
               <div className="receipt-row">
                 <span>Fecha:</span>
-                <span>{new Date().toLocaleString('es-PE')}</span>
+                <span>{formatPeruDateTime(new Date())}</span>
               </div>
               <div className="receipt-row">
                 <span>Mesa:</span>

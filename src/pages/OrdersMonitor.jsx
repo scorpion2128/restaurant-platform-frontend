@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { orderService } from '../services/orderService';
 import Toast from '../components/Toast/Toast';
 import Layout from '../components/Layout/Layout';
+import { formatPeruDateTime } from '../utils/dateTime';
 import './OrdersMonitor.css';
 
 const OrdersMonitor = () => {
@@ -239,13 +240,7 @@ const OrdersMonitor = () => {
                 <div className="order-meta">
                   <span className="waiter-name">👤 {order.waiterName}</span>
                   <span className="order-time">
-                    🕐 {new Date(order.createdAt).toLocaleString('es-PE', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+                    🕐 {formatPeruDateTime(order.createdAt, { second: undefined })}
                   </span>
                   <span className="expand-icon">
                     {expandedOrder === order.id ? '▼' : '▶'}
