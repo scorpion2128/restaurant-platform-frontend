@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { formatPeruDateTime } from '../../utils/dateTime';
 import './ReceiptPrint.css';
 
 const ReceiptPrint = ({ receipt, onClose }) => {
@@ -123,7 +124,7 @@ const ReceiptPrint = ({ receipt, onClose }) => {
               </div>
               <div className="receipt-row">
                 <span>Fecha:</span>
-                <span>{new Date(payment.paidAt).toLocaleString('es-PE')}</span>
+                <span>{formatPeruDateTime(payment.paidAt)}</span>
               </div>
               <div className="receipt-row">
                 <span>Mesa:</span>

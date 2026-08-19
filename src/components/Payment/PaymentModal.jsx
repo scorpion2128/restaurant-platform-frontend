@@ -3,6 +3,7 @@ import paymentService from '../../services/paymentService';
 import Toast from '../Toast/Toast';
 import PreReceiptPrint from './PreReceiptPrint';
 import ReceiptPrint from './ReceiptPrint';
+import { formatPeruDateTime } from '../../utils/dateTime';
 import './PaymentModal.css';
 
 const PaymentModal = ({ tableId, orderId, onClose, onPaymentComplete }) => {
@@ -234,7 +235,7 @@ const PaymentModal = ({ tableId, orderId, onClose, onPaymentComplete }) => {
                         <div className="order-card-header">
                           <span className="order-number">{order.orderNumber}</span>
                           <span className="order-date">
-                            {new Date(order.createdAt).toLocaleString('es-PE')}
+                            {formatPeruDateTime(order.createdAt)}
                           </span>
                         </div>
                         <div className="order-items-list">

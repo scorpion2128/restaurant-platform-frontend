@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { orderService } from '../services/orderService';
 import Toast from '../components/Toast/Toast';
 import Layout from '../components/Layout/Layout';
+import { formatPeruTime } from '../utils/dateTime';
 import './KitchenDashboard.css';
 
 const KitchenDashboard = () => {
@@ -112,10 +113,7 @@ const KitchenDashboard = () => {
             </span>
           </div>
           <span className="order-time">
-            {new Date(order.createdAt).toLocaleTimeString('es-PE', { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}
+            {formatPeruTime(order.createdAt)}
           </span>
         </div>
 
